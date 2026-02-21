@@ -1,0 +1,12 @@
+# Swift Package Manager
+Packages/
+Package.pins
+Package.resolved
+.swiftpm
+.build/
+
+# Local Files
+.swiftcpd-cache
+
+# SonarCloud
+.sonar/
