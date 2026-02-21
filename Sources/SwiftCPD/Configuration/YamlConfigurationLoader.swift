@@ -1,7 +1,8 @@
 import Foundation
-import Yams
 
 struct YamlConfigurationLoader: Sendable {
+
+    private let parser = YamlConfigurationParser()
 
     func load(from filePath: String) throws -> YamlConfiguration {
         let content: String
@@ -34,8 +35,7 @@ struct YamlConfigurationLoader: Sendable {
         }
 
         do {
-            let decoder = YAMLDecoder()
-            return try decoder.decode(YamlConfiguration.self, from: content)
+            return try parser.parse(content)
         } catch {
             throw YamlConfigurationError.invalidYaml(filePath)
         }

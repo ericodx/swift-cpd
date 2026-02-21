@@ -1,4 +1,4 @@
-struct YamlConfiguration: Decodable, Sendable, Equatable {
+struct YamlConfiguration: Sendable, Equatable {
 
     let minimumTokenCount: Int?
     let minimumLineCount: Int?

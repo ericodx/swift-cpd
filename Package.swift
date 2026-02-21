@@ -14,8 +14,7 @@ let package = Package(
         .plugin(name: "SwiftCPDPlugin", targets: ["SwiftCPDPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0"),
-        .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.1"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0")
     ],
     targets: [
         .executableTarget(
@@ -23,7 +22,6 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax"),
-                .product(name: "Yams", package: "Yams"),
             ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
