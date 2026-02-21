@@ -141,6 +141,20 @@ struct YamlConfigurationParserTests {
         #expect(config.maxDuplication == nil)
     }
 
+    @Test("Given orphaned array item with no preceding key, when parsing, then throws")
+    func orphanedArrayItemThrows() {
+        #expect(throws: (any Error).self) {
+            try parser.parse("- orphan")
+        }
+    }
+
+    @Test("Given line without colon separator, when parsing, then throws")
+    func lineWithoutColonThrows() {
+        #expect(throws: (any Error).self) {
+            try parser.parse("invalidline")
+        }
+    }
+
     @Test("Given invalid flow sequence, when parsing, then throws")
     func invalidFlowSequenceThrows() {
         #expect(throws: (any Error).self) {
@@ -155,10 +169,30 @@ struct YamlConfigurationParserTests {
         }
     }
 
+    @Test("Given non-double value for double field, when parsing, then throws")
+    func invalidDoubleValueThrows() {
+        #expect(throws: (any Error).self) {
+            try parser.parse("maxDuplication: notanumber")
+        }
+    }
+
     @Test("Given non-bool value for bool field, when parsing, then throws")
     func invalidBoolValueThrows() {
         #expect(throws: (any Error).self) {
             try parser.parse("ignoreSameFile: maybe")
+        }
+    }
+
+    @Test("Given non-integer item in integer array, when parsing, then throws")
+    func invalidIntInArrayThrows() {
+        #expect(throws: (any Error).self) {
+            try parser.parse(
+                """
+                enabledCloneTypes:
+                  - 1
+                  - abc
+                """
+            )
         }
     }
 
