@@ -100,6 +100,29 @@ struct FileCacheTests {
         #expect(result == nil)
     }
 
+    @Test("Given an encoder that throws, when saving, then does not write the cache file")
+    func saveSkipsWriteWhenEncodingFails() async {
+        struct EncodeFailure: Error {}
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cache_encode_fail_\(UUID().uuidString)")
+            .path
+
+        defer { try? FileManager.default.removeItem(atPath: tempDir) }
+
+        let cache = FileCache(encoder: { _ in throw EncodeFailure() })
+        let entry = CacheEntry(
+            contentHash: "abc123",
+            tokens: [Token(kind: .keyword, text: "let", location: location)],
+            normalizedTokens: [Token(kind: .keyword, text: "let", location: location)]
+        )
+
+        await cache.store(file: "A.swift", entry: entry)
+        await cache.save(to: tempDir)
+
+        #expect(!FileManager.default.fileExists(atPath: tempDir + "/cache.json"))
+    }
+
     @Test("Given read-only directory, when saving, then does not crash")
     func saveToReadOnlyDirectory() async {
         let tempDir = FileManager.default.temporaryDirectory
