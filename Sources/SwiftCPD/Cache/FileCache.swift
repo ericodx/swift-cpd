@@ -3,6 +3,11 @@ import Foundation
 actor FileCache {
 
     private var entries: [String: CacheEntry] = [:]
+    private let encoder: @Sendable ([String: CacheEntry]) throws -> Data
+
+    init(encoder: @escaping @Sendable ([String: CacheEntry]) throws -> Data = { try JSONEncoder().encode($0) }) {
+        self.encoder = encoder
+    }
 
     func lookup(file: String, contentHash: String) -> CacheEntry? {
         guard
@@ -41,7 +46,7 @@ actor FileCache {
         }
 
         guard
-            let data = try? JSONEncoder().encode(entries)
+            let data = try? encoder(entries)
         else {
             return
         }
