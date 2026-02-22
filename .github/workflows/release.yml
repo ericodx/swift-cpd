@@ -14,6 +14,8 @@ on:
 jobs:
   build-and-release:
     runs-on: macos-26
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
 
@@ -48,12 +50,7 @@ jobs:
           cp .build/release/swift-cpd release/
           cd release && tar -czf "${{ steps.version.outputs.artifact_name }}" swift-cpd
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.version }}
-          files: release/${{ steps.version.outputs.artifact_name }}
-          generate_release_notes: true
+      - name: Upload artifact
+        run: gh release upload ${{ steps.version.outputs.version }} release/${{ steps.version.outputs.artifact_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
