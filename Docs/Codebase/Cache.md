@@ -22,10 +22,11 @@ Thread-safe cache manager using actor isolation. Accessed concurrently from the 
 
 | Method | Signature | Description |
 |---|---|---|
+| `init` | `(encoder: @Sendable ([String: CacheEntry]) throws -> Data)` | Optional encoder injection; defaults to `JSONEncoder` |
 | `lookup` | `(file: String, contentHash: String) -> CacheEntry?` | Returns cached entry if hash matches |
 | `store` | `(file: String, entry: CacheEntry)` | Stores a new cache entry |
-| `load` | `(from directory: String) throws` | Loads cache from disk |
-| `save` | `(to directory: String) throws` | Persists cache to disk |
+| `load` | `(from directory: String)` | Loads cache from disk; silently no-ops on missing or corrupt file |
+| `save` | `(to directory: String)` | Persists cache to disk; silently no-ops on encoding or write failure |
 
 ---
 
