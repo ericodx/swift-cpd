@@ -178,9 +178,3 @@ swift-cpd --baseline-update Sources/
 | [CLI Usage](Docs/CLI/Usage.md) | Commands, flags, and configuration |
 | [Installation](Docs/INSTALLATION.md) | Homebrew, SPM, and manual build |
 | [Xcode Plugin](Docs/Integration/XcodePlugin.md) | Build tool plugin setup |
-
----
-
-## License
-
-MIT
