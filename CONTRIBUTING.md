@@ -88,4 +88,4 @@ Private contact is discouraged.
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the [BSD 3-Clause License](./LICENSE).
+By contributing, you agree that your contributions are licensed under the [MIT](./LICENSE).
