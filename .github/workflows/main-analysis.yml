@@ -97,13 +97,13 @@ jobs:
           echo "Coverage generated"
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage/
 
       - name: Upload index store
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: index-store
           path: .build/debug/index/store
@@ -132,7 +132,7 @@ jobs:
           mkdir -p reports
 
       - name: Download index store
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: index-store
           path: .build/debug/index/store
@@ -196,7 +196,7 @@ jobs:
             --report-format sarif || true
 
       - name: Upload analysis reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: reports/
@@ -215,13 +215,13 @@ jobs:
           fetch-depth: 0
 
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: coverage
           path: coverage
 
       - name: Download reports artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: reports
           path: reports
