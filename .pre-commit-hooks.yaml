@@ -1,0 +1,7 @@
+- id: swift-cpd
+  name: Swift CPD
+  description: Detect duplicated code in Swift and Objective-C/C codebases.
+  entry: swift-cpd
+  language: swift
+  types: [swift]
+  pass_filenames: false
