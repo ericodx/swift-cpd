@@ -76,12 +76,15 @@ See [Xcode Plugin](Integration/XcodePlugin.md) for build tool plugin setup.
 Add the hook to your .pre-commit-config.yaml:
 
 ```yaml
-repos:
-  - repo: https://github.com/ericodx/swift-cpd
+- repo: https://github.com/ericodx/swift-cpd
     rev: v1.1.0
     hooks:
       - id: swift-cpd
-        args: ["--max-duplication", "5", "Sources"]
+        name: ✓ Swift Clone & Pattern Detector
+        entry: swift-cpd --max-duplication 5 Sources
+        language: system
+        types: [swift]
+        pass_filenames: false
 ```
 
 Install the hooks:
