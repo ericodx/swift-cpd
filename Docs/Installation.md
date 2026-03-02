@@ -71,6 +71,33 @@ See [Xcode Plugin](Integration/XcodePlugin.md) for build tool plugin setup.
 
 ---
 
+## pre-commit
+
+Add the hook to your .pre-commit-config.yaml:
+
+```yaml
+repos:
+  - repo: https://github.com/ericodx/swift-cpd
+    rev: v1.1.0
+    hooks:
+      - id: swift-cpd
+        args: ["--max-duplication", "5", "Sources"]
+```
+
+Install the hooks:
+
+```bash
+pre-commit install
+```
+
+Run manually (optional):
+
+```bash
+pre-commit run --all-files
+```
+
+---
+
 ## Next Steps
 
 | Document | Description |
