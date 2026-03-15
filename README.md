@@ -26,7 +26,7 @@ brew tap ericodx/homebrew-tools
 brew install swift-cpd
 ```
 
-Other installation methods — pre-built binary, build from source, pre-commit hook, Xcode plugin — are covered in the [Installation Guide](Docs/installation.md).
+Other installation methods — pre-built binary, build from source, pre-commit hook, Xcode plugin — are covered in the [Installation Guide](Docs/INSTALLATION.md).
 
 ## Quick start
 
@@ -64,14 +64,14 @@ exclude:
   - "**/*.generated.swift"
 ```
 
-Full reference in the [Usage & Configuration Guide](Docs/usage.md).
+Full reference in the [Usage & Configuration Guide](Docs/USAGE.md).
 
 ## Documentation
 
 | Document | Description |
 |---|---|
-| [Installation](Docs/installation.md) | Homebrew, binary, source, pre-commit, Xcode plugin |
-| [Usage & Configuration](Docs/usage.md) | CLI options, YAML config, output formats, CI integration |
+| [Installation](Docs/INSTALLATION.md) | Homebrew, binary, source, pre-commit, Xcode plugin |
+| [Usage & Configuration](Docs/USAGE.md) | CLI options, YAML config, output formats, CI integration |
 | [Xcode Plugin](Docs/xcode-plugin.md) | Step-by-step Xcode and SPM plugin setup |
 | [Architecture](Docs/Architecture/README.md) | System design, pipeline, detection algorithms |
 | [CodeBase Reference](Docs/CodeBase/README.md) | Every type, protocol, and algorithm documented |
