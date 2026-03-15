@@ -12,7 +12,7 @@ permissions:
 jobs:
   # Build And Test
   test-and-coverage:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     timeout-minutes: 30
 
     steps:
@@ -94,7 +94,7 @@ jobs:
 
   # Static Analysis
   static-analysis:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     needs: test-and-coverage
     timeout-minutes: 15
 
@@ -164,7 +164,7 @@ jobs:
 
   # Quality Gate
   quality-gate:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     needs: [test-and-coverage, static-analysis]
     timeout-minutes: 5
 

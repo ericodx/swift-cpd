@@ -7,7 +7,7 @@ on:
 jobs:
   # Tests And Coverage
   test-and-coverage:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     timeout-minutes: 30
 
     steps:
@@ -107,7 +107,7 @@ jobs:
 
   # Static Analysis
   static-analysis:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     needs: test-and-coverage
 
     steps:
@@ -194,7 +194,7 @@ jobs:
 
   # Publish Code Analysis
   publish-code-analysis:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     needs: [test-and-coverage, static-analysis]
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
