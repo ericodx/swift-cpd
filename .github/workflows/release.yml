@@ -13,13 +13,13 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
 
-      - uses: swift-actions/setup-swift@v2.4.0
+      - uses: swift-actions/setup-swift@v3
         with:
           swift-version: "6.2.3"
 
@@ -33,13 +33,13 @@ jobs:
             VERSION="${{ github.ref_name }}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "artifact_name=swift-cpd-$VERSION-linux.tar.gz" >> $GITHUB_OUTPUT
+          echo "artifact_name=swift-cpd-$VERSION-macos.tar.gz" >> $GITHUB_OUTPUT
 
       - name: Inject version
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           VERSION="${VERSION#v}"
-          sed -i "s/0.0.0-dev/$VERSION/" Sources/SwiftCPD/Version.swift
+          sed -i '' "s/0.0.0-dev/$VERSION/" Sources/SwiftCPD/Version.swift
 
       - name: Build
         run: swift build -c release
