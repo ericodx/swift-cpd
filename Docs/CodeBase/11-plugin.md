@@ -1,6 +1,6 @@
 # Plugin
 
-← [Cache & Baseline](10-cache-baseline.md) | [Index →](README.md)
+← [Cache & Baseline](10-cache-baseline.md) | [Next: Index →](README.md)
 
 ---
 
@@ -70,4 +70,4 @@ Add to a target via:
 
 ---
 
-← [Cache & Baseline](10-cache-baseline.md) | [Index →](README.md)
+← [Cache & Baseline](10-cache-baseline.md) | [Next: Index →](README.md)
