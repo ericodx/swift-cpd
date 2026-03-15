@@ -5,6 +5,10 @@ on:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -29,9 +33,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-${{ runner.arch }}-spm-
 
       - name: Run tests and generate coverage
         run: |
@@ -80,23 +84,22 @@ jobs:
           path: |
             coverage/lcov.info
             coverage/lines-percent.txt
+          retention-days: 1
 
-      - name: Upload swift-cpd binary
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: swift-cpd-bin
-          path: .build/debug/swift-cpd
-
-      - name: Upload index store
-        uses: actions/upload-artifact@v7
-        with:
-          name: index-store
-          path: .build/debug/index/store
+          name: build-artifacts
+          path: |
+            .build/debug/swift-cpd
+            .build/debug/index/store
+          retention-days: 1
 
   # Static Analysis
   static-analysis:
     runs-on: macos-26
     needs: test-and-coverage
+    timeout-minutes: 15
     if: github.actor != 'dependabot[bot]'
 
     steps:
@@ -108,15 +111,23 @@ jobs:
         with:
           swift-version: "6.2.3"
 
+      - name: Cache Homebrew
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: ${{ runner.os }}-${{ runner.arch }}-brew-swiftlint-gitleaks-periphery
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-brew-
+
       - name: Install analysis tools
         run: |
           brew install swiftlint gitleaks periphery
 
-      - name: Download index store
+      - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: index-store
-          path: .build/debug/index/store
+          name: build-artifacts
+          path: .build/debug
 
       - name: SwiftLint
         run: |
@@ -137,17 +148,11 @@ jobs:
             --report-path reports/gitleaks.sarif \
             --report-format sarif || true
 
-      - name: Download swift-cpd binary
-        uses: actions/download-artifact@v8
-        with:
-          name: swift-cpd-bin
-          path: .bin
-
       - name: Code duplication (swift-cpd)
         run: |
-          chmod +x .bin/swift-cpd
+          chmod +x .build/debug/swift-cpd
 
-          .bin/swift-cpd \
+          .build/debug/swift-cpd \
             --types 1,2,3,4 \
             --min-tokens 50 \
             --min-lines 5 \
@@ -162,6 +167,7 @@ jobs:
         with:
           name: reports
           path: reports/
+          retention-days: 1
 
   # Quality Gate
   quality-gate:

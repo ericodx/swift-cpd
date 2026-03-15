@@ -25,9 +25,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-spm-${{ hashFiles('**/Package.resolved', '**/Package.swift') }}
           restore-keys: |
-            ${{ runner.os }}-spm-
+            ${{ runner.os }}-${{ runner.arch }}-spm-
 
       - name: Prepare directories
         run: |
@@ -101,41 +101,55 @@ jobs:
         with:
           name: coverage
           path: coverage/
+          retention-days: 3
 
-      - name: Upload index store
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: index-store
-          path: .build/debug/index/store
+          name: build-artifacts
+          path: |
+            .build/debug/swift-cpd
+            .build/debug/index/store
+          retention-days: 3
 
   # Static Analysis
   static-analysis:
     runs-on: macos-26
     needs: test-and-coverage
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
 
       - name: Setup Swift
         uses: swift-actions/setup-swift@v3
         with:
           swift-version: "6.2.3"
 
+      - name: Cache Homebrew
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: ${{ runner.os }}-${{ runner.arch }}-brew-swiftlint-gitleaks-periphery
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-brew-
+
       - name: Install analysis tools
         run: |
-          brew update
           brew install swiftlint gitleaks periphery
 
       - name: Prepare directories
         run: |
           mkdir -p reports
 
-      - name: Download index store
+      - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: index-store
-          path: .build/debug/index/store
+          name: build-artifacts
+          path: .build/debug
 
       - name: Run SwiftLint
         run: |
@@ -200,6 +214,7 @@ jobs:
         with:
           name: reports
           path: reports/
+          retention-days: 3
 
   # Publish Code Analysis
   publish-code-analysis:
