@@ -31,6 +31,16 @@ Changes that violate these principles will not be accepted, even if they pass te
 
 ---
 
+## Code Style
+
+- **Names are the only form of documentation** — types, functions, variables, and parameters must express intent without comments
+- Do not add comments or documentation strings to code
+- Use `async`/`await` for all asynchronous code — `DispatchQueue` and `Combine` are forbidden
+- Shared mutable state must be isolated in actors
+- All data flowing between pipeline stages must be value types conforming to `Sendable`
+
+---
+
 ## AI-Assisted Contributions
 
 AI-assisted contributions are welcome.
@@ -72,17 +82,27 @@ Unapproved structural changes may be closed without review.
 
 ## Testing
 
+- Use **Swift Testing** (`@Suite`, `@Test`) — not XCTest
+- Name tests using Given/When/Then conventions
 - Unit tests are mandatory for all new functionality
-- Integration tests with real Swift files are required for detection logic
 - Tests must prove **determinism** — same input always produces same output
 - Include both positive cases (expected clones) and negative cases (false positives to avoid)
-- Target code coverage: **90%+**
+- Unit tests must not access the real filesystem outside of temporary directories
+
+### Test helpers
+
+| Helper | Purpose |
+|---|---|
+| `TokenFactory` | Build token fixtures for unit tests |
+| `TempFileHelper` / `TempDirectoryHelper` | Filesystem-dependent tests |
+| `AnalysisHelper` | Integration-level assertions |
+| `ProcessRunner` | End-to-end CLI tests |
 
 ---
 
 ## Communication
 
-All communication happens publicly via GitHub Issues and Discussions.
+All communication happens publicly via [GitHub Discussions](https://github.com/ericodx/swift-cpd/discussions).
 Private contact is discouraged.
 
 ---

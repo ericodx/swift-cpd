@@ -2,6 +2,8 @@
 
 `SwiftCPDPlugin` integrates clone detection directly into the Xcode build system. After installation, every build runs `swift-cpd` automatically and surfaces clones as **yellow warning triangles** inline in the source editor — no terminal required.
 
+**Requirements:** macOS 15 or later, Xcode 16 or later.
+
 ---
 
 ## Table of Contents
