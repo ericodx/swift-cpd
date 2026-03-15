@@ -4,9 +4,6 @@ on:
   push:
     branches: [ main ]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   # Tests And Coverage
   test-and-coverage:
@@ -19,10 +16,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v3
-        with:
-          swift-version: "6.2.3"
+      - name: Verify Swift version
+        run: swift --version
 
       - name: Cache SwiftPM
         uses: actions/cache@v5
@@ -127,10 +122,8 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v3
-        with:
-          swift-version: "6.2.3"
+      - name: Verify Swift version
+        run: swift --version
 
       - name: Cache Homebrew
         uses: actions/cache@v5
