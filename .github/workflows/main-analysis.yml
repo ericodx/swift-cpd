@@ -3,6 +3,8 @@ name: Main Analysis
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**/*.md'
 
 jobs:
   # Tests And Coverage
