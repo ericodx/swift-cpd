@@ -4,6 +4,7 @@
 
 - macOS 15 or later
 - Xcode 16 or later (for building from source or using the Xcode plugin)
+- Swift 6.2 or later (for building from source)
 
 ---
 
@@ -45,7 +46,7 @@ Pre-built binaries are published with every release on the [GitHub Releases page
 ```bash
 # Replace X.Y.Z with the desired version
 VERSION="1.0.0"
-curl -L "https://github.com/ericodx/swift-cpd/releases/download/v${VERSION}/swift-cpd-v${VERSION}-linux.tar.gz" \
+curl -L "https://github.com/ericodx/swift-cpd/releases/download/v${VERSION}/swift-cpd-v${VERSION}-macos.tar.gz" \
   | tar -xz
 
 # Move to a directory in your PATH
