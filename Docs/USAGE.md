@@ -125,7 +125,7 @@ outputFormat: text
 ignoreSameFile: true
 
 # Ignore Type 3 and Type 4 (structural/semantic) clones.
-ignoreStructural: false
+ignoreStructural: true
 
 # Glob patterns for files to exclude. Evaluated against the full file path.
 exclude:
@@ -194,8 +194,8 @@ Paths on the CLI override `paths:` in the YAML file. When no paths are given, th
 | `--format <fmt>` | `text` | `text json html xcode` | Output format |
 | `--output <path>` | stdout | — | Write output to a file |
 | `--exclude <pattern>` | — | glob | Exclude matching files (repeatable) |
-| `--ignore-same-file` | false | — | Skip clones within one file |
-| `--ignore-structural` | false | — | Skip Type 3 and Type 4 clones |
+| `--ignore-same-file` | true | — | Skip clones within one file |
+| `--ignore-structural` | true | — | Skip Type 3 and Type 4 clones |
 | `--cross-language` | false | — | Include Objective-C/C files |
 | `--suppression-tag <tag>` | `swiftcpd:ignore` | — | Custom suppression comment tag |
 | `--max-duplication <N>` | — | 0–100 | Fail if duplication % exceeds N |
