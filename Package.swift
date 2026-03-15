@@ -5,13 +5,14 @@ let package = Package(
     name: "SwiftCPD",
     platforms: [
         .macOS(.v15),
-        .iOS(.v15),
-        .tvOS(.v15),
-        .watchOS(.v8),
+        .iOS(.v13),
+        .tvOS(.v13),
+        .watchOS(.v6),
         .visionOS(.v1),
     ],
     products: [
-        .plugin(name: "SwiftCPDPlugin", targets: ["SwiftCPDPlugin"])
+        .executable(name: "swift-cpd", targets: ["swift-cpd"]),
+        .plugin(name: "SwiftCPDPlugin", targets: ["SwiftCPDPlugin"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0")
