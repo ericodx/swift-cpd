@@ -109,6 +109,16 @@ repos:
         args: ["format", "--in-place", "--parallel"]
         types: [swift]
 
+  # Swift Marshal
+  - repo: https://github.com/ericodx/swift-marshal
+    rev: v1.0.0
+    hooks:
+      - id: swift-marshal
+        name: ✓ Swift Marshal
+        description: Reorder Swift type members without rewriting code.
+        types: [swift]
+        args: ["--path", "Sources"]
+
   # Local hooks
   - repo: local
     hooks:
