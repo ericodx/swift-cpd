@@ -39,27 +39,31 @@ struct GlobMatcher: Sendable {
 extension GlobMatcher {
 
     private static func convertGlobToRegex(_ glob: String) -> String {
-        var regex = ""
-        var index = glob.startIndex
+        let isAbsolute = glob.hasPrefix("/")
+        let hasTrailingSlash = glob.hasSuffix("/")
+        let source = hasTrailingSlash ? String(glob.dropLast()) : glob
 
-        while index < glob.endIndex {
-            let char = glob[index]
+        var regex = ""
+        var index = source.startIndex
+
+        while index < source.endIndex {
+            let char = source[index]
 
             switch char {
             case "*":
-                let next = glob.index(after: index)
+                let next = source.index(after: index)
 
-                if next < glob.endIndex, glob[next] == "*" {
-                    let afterStars = glob.index(after: next)
+                if next < source.endIndex, source[next] == "*" {
+                    let afterStars = source.index(after: next)
 
-                    if afterStars < glob.endIndex, glob[afterStars] == "/" {
+                    if afterStars < source.endIndex, source[afterStars] == "/" {
                         regex += "(.+/)?"
-                        index = glob.index(after: afterStars)
+                        index = source.index(after: afterStars)
                         continue
                     }
 
                     regex += ".*"
-                    index = glob.index(after: next)
+                    index = source.index(after: next)
                     continue
                 }
 
@@ -78,9 +82,12 @@ extension GlobMatcher {
                 regex += String(char)
             }
 
-            index = glob.index(after: index)
+            index = source.index(after: index)
         }
 
-        return "^" + regex + "$"
+        let prefix = isAbsolute ? "^" : "(^|/)"
+        let suffix = hasTrailingSlash ? "(/|$)" : "$"
+
+        return prefix + regex + suffix
     }
 }

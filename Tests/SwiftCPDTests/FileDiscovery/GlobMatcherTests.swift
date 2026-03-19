@@ -104,4 +104,39 @@ struct GlobMatcherTests {
 
         #expect(matcher.matches("anything.swift") == false)
     }
+
+    @Test("Given relative directory pattern with trailing slash, when matching absolute path, then matches")
+    func relativeDirectoryPatternMatchesAbsolutePath() {
+        let matcher = GlobMatcher(patterns: ["Sources/MyApp/Discovery/Operators/"])
+
+        #expect(matcher.matches("/Users/project/Sources/MyApp/Discovery/Operators") == true)
+        #expect(matcher.matches("/Users/project/Sources/MyApp/Discovery/Operators/File.swift") == true)
+        #expect(matcher.matches("/Users/project/Sources/MyApp/Discovery/Other.swift") == false)
+        #expect(matcher.matches("/Users/project/Sources/MyApp/Discovery/OperatorsExtra/File.swift") == false)
+    }
+
+    @Test("Given relative path pattern without trailing slash, when matching absolute path, then matches correctly")
+    func relativePathPatternMatchesAbsolutePath() {
+        let matcher = GlobMatcher(patterns: ["Sources/Generated.swift"])
+
+        #expect(matcher.matches("/Users/project/Sources/Generated.swift") == true)
+        #expect(matcher.matches("/Users/project/Sources/Other.swift") == false)
+    }
+
+    @Test("Given relative pattern, when matching relative path, then still matches")
+    func relativePatternMatchesRelativePath() {
+        let matcher = GlobMatcher(patterns: ["Sources/MyApp/Discovery/Operators/"])
+
+        #expect(matcher.matches("Sources/MyApp/Discovery/Operators") == true)
+        #expect(matcher.matches("Sources/MyApp/Discovery/Operators/File.swift") == true)
+        #expect(matcher.matches("Sources/MyApp/Discovery/Other.swift") == false)
+    }
+
+    @Test("Given absolute path pattern, when matching, then requires match at path start")
+    func absolutePatternRequiresPathStart() {
+        let matcher = GlobMatcher(patterns: ["/Users/project/Sources/Generated.swift"])
+
+        #expect(matcher.matches("/Users/project/Sources/Generated.swift") == true)
+        #expect(matcher.matches("/Users/other/project/Sources/Generated.swift") == false)
+    }
 }

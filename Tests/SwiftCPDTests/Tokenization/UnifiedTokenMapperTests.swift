@@ -348,4 +348,110 @@ struct UnifiedTokenMapperTests {
         #expect(result[0].text == "$COLLECTION_TYPE")
         #expect(!result.contains { $0.text == "$CALL" })
     }
+
+    @Test("Given NSMutableString token, when mapping, then returns String token")
+    func nsMutableStringMapping() {
+        let tokens = [Token(kind: .typeName, text: "NSMutableString", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "String")
+        #expect(result[0].kind == .typeName)
+    }
+
+    @Test("Given NSUInteger token, when mapping, then returns Int token")
+    func nsUIntegerMapping() {
+        let tokens = [Token(kind: .typeName, text: "NSUInteger", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "Int")
+        #expect(result[0].kind == .typeName)
+    }
+
+    @Test("Given CGFloat token, when mapping, then returns Int token")
+    func cgFloatMapping() {
+        let tokens = [Token(kind: .typeName, text: "CGFloat", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "Int")
+        #expect(result[0].kind == .typeName)
+    }
+
+    @Test("Given NSObject token, when mapping, then returns AnyObject token")
+    func nsObjectMapping() {
+        let tokens = [Token(kind: .typeName, text: "NSObject", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "AnyObject")
+        #expect(result[0].kind == .typeName)
+    }
+
+    @Test("Given @implementation keyword, when mapping, then returns class keyword")
+    func implementationMapping() {
+        let tokens = [Token(kind: .keyword, text: "@implementation", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "class")
+        #expect(result[0].kind == .keyword)
+    }
+
+    @Test("Given NSOrderedSet token, when mapping, then returns $COLLECTION_TYPE")
+    func nsOrderedSetCollectionType() {
+        let tokens = [Token(kind: .typeName, text: "NSOrderedSet", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "$COLLECTION_TYPE")
+        #expect(result[0].kind == .identifier)
+    }
+
+    @Test("Given NSMutableOrderedSet token, when mapping, then returns $COLLECTION_TYPE")
+    func nsMutableOrderedSetCollectionType() {
+        let tokens = [Token(kind: .typeName, text: "NSMutableOrderedSet", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result[0].text == "$COLLECTION_TYPE")
+        #expect(result[0].kind == .identifier)
+    }
+
+    @Test("Given empty token list, when mapping, then returns empty list")
+    func emptyTokenListReturnsEmpty() {
+        let result = mapper.map([])
+
+        #expect(result.isEmpty)
+    }
+
+    @Test("Given bracket then identifier then non-identifier, when mapping, then no message send produced")
+    func bracketIdentifierNonIdentifierSkipsMsgSend() {
+        let tokens = [
+            Token(kind: .punctuation, text: "[", location: location),
+            Token(kind: .identifier, text: "obj", location: location),
+            Token(kind: .keyword, text: "if", location: location),
+            Token(kind: .punctuation, text: "]", location: location),
+        ]
+
+        let result = mapper.map(tokens)
+
+        #expect(!result.contains { $0.text == "$CALL" || $0.text == "$ACCESS" })
+    }
+
+    @Test("Given identifier as sole token, when mapping, then tryFunctionCall boundary guard is not violated")
+    func singleIdentifierNotFunctionCall() {
+        let tokens = [Token(kind: .identifier, text: "standalone", location: location)]
+        let result = mapper.map(tokens)
+
+        #expect(result.count == 1)
+        #expect(result[0].text == "standalone")
+    }
+
+    @Test("Given identifier then dot as last two tokens, when mapping, then tryPropertyAccess boundary is not violated")
+    func identifierDotAtBoundaryNotPropertyAccess() {
+        let tokens = [
+            Token(kind: .identifier, text: "obj", location: location),
+            Token(kind: .punctuation, text: ".", location: location),
+        ]
+
+        let result = mapper.map(tokens)
+
+        #expect(result.count == 2)
+        #expect(!result.contains { $0.text == "$ACCESS" })
+    }
 }
