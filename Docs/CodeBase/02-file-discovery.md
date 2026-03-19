@@ -11,14 +11,18 @@
 ```mermaid
 flowchart TD
     paths["Configuration.paths"] --> SFD["SourceFileDiscovery"]
-    SFD --> ext{Extension?}
-    ext -- .swift --> inc[Include]
+    SFD --> item{Item type?}
+    item -- symlink --> skip[Skip]
+    item -- directory --> excl{"GlobMatcher\n.matches?"}
+    excl -- yes --> prune["skipDescendants() + Skip"]
+    excl -- no --> item
+    item -- file --> excl2{"GlobMatcher\n.matches?"}
+    excl2 -- yes --> skip
+    excl2 -- no --> ext{Extension?}
+    ext -- .swift --> result["[String] file paths"]
     ext -- ".m .mm .h .c .cpp" --> CL{crossLanguageEnabled?}
-    CL -- yes --> inc
-    CL -- no --> skip[Skip]
-    inc --> glob["GlobMatcher.matches?"]
-    glob -- yes --> skip
-    glob -- no --> result["[String] file paths"]
+    CL -- yes --> result
+    CL -- no --> skip
 ```
 
 ---
@@ -68,6 +72,12 @@ func matches(_ filePath: String) -> Bool
 ```
 
 Patterns support `*` (any characters within a path component) and `**` (any number of path components). A file is excluded if it matches **any** pattern in the list.
+
+### Matching semantics
+
+- **Absolute patterns** (starting with `/`): matched against the full absolute path anchored at the start.
+- **Relative patterns** (not starting with `/`): matched at path-component boundaries anywhere in the absolute path. `Sources/Foo/Bar` matches `/Users/project/Sources/Foo/Bar/File.swift`.
+- **Directory patterns** (ending with `/`): match the directory itself and all files within it. `Sources/Generated/` matches both the directory URL and any file inside it, enabling early pruning via `enumerator.skipDescendants()`.
 
 ### CompiledPattern
 

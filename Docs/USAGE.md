@@ -128,10 +128,13 @@ ignoreSameFile: true
 ignoreStructural: true
 
 # Glob patterns for files to exclude. Evaluated against the full file path.
+# Relative patterns match at path-component boundaries anywhere in the absolute path.
+# Patterns ending with / exclude that directory and all files within it.
 exclude:
   - "**/*Tests*"
   - "**/Generated/**"
   - "**/*.generated.swift"
+  - "Sources/MyApp/Discovery/Operators/"
 
 # ── Cross-language ────────────────────────────────────────────────────────────
 
