@@ -3,8 +3,8 @@
 ## Requirements
 
 - macOS 15 or later
-- Xcode 16 or later (for building from source or using the Xcode plugin)
-- Swift 6.2 or later (for building from source)
+- Xcode 16.3 or later (for building from source or using the Xcode plugin)
+- Swift 6.3 or later (for building from source)
 
 ---
 
@@ -63,7 +63,7 @@ swift-cpd --version
 
 ## Build from source
 
-Requires Swift 6.2 or later. Check your version with `swift --version`.
+Requires Swift 6.3 or later. Check your version with `swift --version`.
 
 ```bash
 git clone https://github.com/ericodx/swift-cpd.git
