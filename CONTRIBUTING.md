@@ -23,7 +23,7 @@ Swift Clone & Pattern Detector follows a strict set of technical principles:
 - The tool is **read-only** — it never modifies source files
 - Results must include **precise source locations** (file, line, column)
 - Performance matters — the tool must scale to large codebases
-- **Zero external dependencies** beyond SwiftSyntax
+- **Minimal external dependencies** — only `swift-syntax` (parsing) and `swift-crypto` (hashing on Linux) are permitted
 - Full compatibility with **Swift 6 Strict Concurrency**
 - Pipeline stages are **stateless pure transformations** — no shared mutable state between them
 
