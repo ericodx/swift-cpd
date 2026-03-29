@@ -37,7 +37,7 @@ jobs:
         run: swift build
 
       - name: Test
-        run: swift test
+        run: swift test --no-parallel
 
   # macOS Build And Test
   macos-build-and-test:
