@@ -300,11 +300,11 @@ extension SwiftCPD {
     }
 
     private static func printError(_ error: any Error) {
-        fputs("error: \(error)\n", stderr)
+        FileHandle.standardError.write(Data("error: \(error)\n".utf8))
     }
 
     private static func printError(_ message: String) {
-        fputs("error: \(message)\n", stderr)
+        FileHandle.standardError.write(Data("error: \(message)\n".utf8))
     }
 
     private static func loadYamlConfiguration(
