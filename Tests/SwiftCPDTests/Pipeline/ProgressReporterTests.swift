@@ -10,8 +10,9 @@ struct ProgressReporterTests {
     func stopBeforeDelayProducesNoOutput() async {
         let pipe = Pipe()
         let reporter = ProgressReporter(totalFiles: 10, output: pipe.fileHandleForWriting)
-        await reporter.start()
+        let task = await reporter.start()
         await reporter.stop()
+        await task.value
         pipe.fileHandleForWriting.closeFile()
 
         let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
