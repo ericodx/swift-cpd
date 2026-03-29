@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import swift_cpd
@@ -7,11 +8,13 @@ struct ProgressReporterTests {
 
     @Test("Given progress reporter stopped before delay, when stopped, then produces no output")
     func stopBeforeDelayProducesNoOutput() async {
-        let output = await StderrCapture.captureAsync {
-            let reporter = ProgressReporter(totalFiles: 10)
-            await reporter.start()
-            await reporter.stop()
-        }
+        let pipe = Pipe()
+        let reporter = ProgressReporter(totalFiles: 10, output: pipe.fileHandleForWriting)
+        await reporter.start()
+        await reporter.stop()
+        pipe.fileHandleForWriting.closeFile()
+
+        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
 
         #expect(output.isEmpty)
     }
@@ -25,22 +28,26 @@ struct ProgressReporterTests {
 
     @Test("Given zero delay, when task completes, then writes progress to stderr")
     func writesProgressAfterDelay() async {
-        let reporter = ProgressReporter(totalFiles: 5, delayNanoseconds: 0)
-        let output = await StderrCapture.captureAsync {
-            let task = await reporter.start()
-            await task.value
-        }
+        let pipe = Pipe()
+        let reporter = ProgressReporter(totalFiles: 5, output: pipe.fileHandleForWriting, delayNanoseconds: 0)
+        let task = await reporter.start()
+        await task.value
         await reporter.stop()
+        pipe.fileHandleForWriting.closeFile()
+
+        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
 
         #expect(output == "Analyzing 5 files...\n")
     }
 
     @Test("Given progress reporter, when writing message, then outputs message to stderr")
     func writeProgressDirectly() {
-        let reporter = ProgressReporter(totalFiles: 1)
-        let output = StderrCapture.capture {
-            reporter.writeProgress("test")
-        }
+        let pipe = Pipe()
+        let reporter = ProgressReporter(totalFiles: 1, output: pipe.fileHandleForWriting)
+        reporter.writeProgress("test")
+        pipe.fileHandleForWriting.closeFile()
+
+        let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
 
         #expect(output == "test\n")
     }
