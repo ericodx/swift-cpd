@@ -26,7 +26,7 @@ struct GlobMatcher: Sendable {
             return false
         }
 
-        let basename = (filePath as NSString).lastPathComponent
+        let basename = URL(fileURLWithPath: filePath).lastPathComponent
 
         return compiledPatterns.contains { compiled in
             let target = compiled.basenameOnly ? basename : filePath
