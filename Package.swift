@@ -15,7 +15,7 @@ let package = Package(
         .plugin(name: "SwiftCPDPlugin", targets: ["SwiftCPDPlugin"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0")
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "603.0.0")
     ],
     targets: [
         .executableTarget(

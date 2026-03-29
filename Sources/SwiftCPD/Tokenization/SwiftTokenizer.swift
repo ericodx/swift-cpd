@@ -63,7 +63,8 @@ extension SwiftTokenizer {
             .comma, .colon, .semicolon, .period,
             .exclamationMark, .postfixQuestionMark,
             .atSign, .pound, .backslash, .backtick,
-            .ellipsis, .prefixAmpersand, .infixQuestionMark:
+            .ellipsis, .prefixAmpersand, .infixQuestionMark,
+            .colonColon:
             return .punctuation
 
         case .poundAvailable, .poundUnavailable,
