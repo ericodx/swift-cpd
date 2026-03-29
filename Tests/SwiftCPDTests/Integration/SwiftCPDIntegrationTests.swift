@@ -216,6 +216,8 @@ struct SwiftCPDIntegrationTests {
 
     @Test("Given init command, when directory is read-only, then exits with analysis error")
     func initReadOnlyDirectoryReturnsError() throws {
+        guard ProcessInfo.processInfo.userName != "root" else { return }
+
         let tempDir = createTempDirectory(prefix: "SwiftCPDInitReadOnly")
         defer {
             try? FileManager.default.setAttributes(

@@ -52,7 +52,16 @@ struct AnalysisPipeline: Sendable {
         }
 
         return PipelineResult(
-            cloneGroups: allClones,
+            cloneGroups: allClones.sorted { lhs, rhs in
+                if lhs.type.rawValue != rhs.type.rawValue {
+                    return lhs.type.rawValue < rhs.type.rawValue
+                }
+                guard let leftFragment = lhs.fragments.first, let rightFragment = rhs.fragments.first else {
+                    return false
+                }
+                if leftFragment.file != rightFragment.file { return leftFragment.file < rightFragment.file }
+                return leftFragment.startLine < rightFragment.startLine
+            },
             totalTokens: totalTokens
         )
     }
