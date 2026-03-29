@@ -30,10 +30,15 @@ func runSwiftCPD(
 }
 
 func productsDirectory() -> URL {
-    if let bundle = Bundle.allBundles.first(where: { $0.bundlePath.hasSuffix(".xctest") }) {
-        return bundle.bundleURL.deletingLastPathComponent()
-    }
-
-    return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        .appendingPathComponent(".build/arm64-apple-macosx/debug")
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/swift")
+    process.arguments = ["build", "--show-bin-path"]
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    try? process.run()
+    process.waitUntilExit()
+    let output =
+        String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return URL(fileURLWithPath: output.isEmpty ? ".build/debug" : output)
 }
