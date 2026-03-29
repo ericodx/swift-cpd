@@ -7,3 +7,5 @@ builder:
       swiftVersion: "6.1"
     - platform: macos-spm
       swiftVersion: "6.0"
+    - platform: linux
+      swiftVersion: "6.2"
