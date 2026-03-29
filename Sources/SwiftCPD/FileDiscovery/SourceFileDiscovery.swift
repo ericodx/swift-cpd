@@ -28,15 +28,16 @@ struct SourceFileDiscovery: Sendable {
 
         for path in paths {
             let resolvedPath = resolvePath(path)
-            var isDirectory: ObjCBool = false
+            let url = URL(fileURLWithPath: resolvedPath)
+            let resourceValues = try? url.resourceValues(forKeys: [.isDirectoryKey])
 
             guard
-                FileManager.default.fileExists(atPath: resolvedPath, isDirectory: &isDirectory)
+                FileManager.default.fileExists(atPath: resolvedPath)
             else {
                 throw FileDiscoveryError.pathDoesNotExist(path)
             }
 
-            if isDirectory.boolValue {
+            if resourceValues?.isDirectory == true {
                 let files = findSourceFilesInDirectory(resolvedPath)
                 results.append(contentsOf: files)
             } else if isValidSourceFile(resolvedPath) {
@@ -99,7 +100,7 @@ extension SourceFileDiscovery {
     }
 
     private func isValidSourceFile(_ path: String) -> Bool {
-        let ext = (path as NSString).pathExtension
+        let ext = URL(fileURLWithPath: path).pathExtension
         return isValidExtension(ext)
     }
 
