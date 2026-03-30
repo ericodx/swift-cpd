@@ -60,7 +60,7 @@ extension SwiftTokenizer {
             .leftBrace, .rightBrace,
             .leftSquare, .rightSquare,
             .leftAngle, .rightAngle,
-            .comma, .colon, .semicolon, .period,
+            .comma, .colon, .colonColon, .semicolon, .period,
             .exclamationMark, .postfixQuestionMark,
             .atSign, .pound, .backslash, .backtick,
             .ellipsis, .prefixAmpersand, .infixQuestionMark:
