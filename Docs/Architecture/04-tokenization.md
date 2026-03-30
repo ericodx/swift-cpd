@@ -46,7 +46,8 @@ integerLiteral    — 42, 0xFF
 floatingLiteral   — 3.14
 stringLiteral     — "hello"
 operatorToken     — +, -, ==, !=, …
-punctuation       — (, ), {, }, [, ], ,, ;
+punctuation       — (, ), {, }, [, ], ,, ;, ::
+colonColon        — :: (C++ namespace qualifier, swift-syntax 603+)
 ```
 
 ---

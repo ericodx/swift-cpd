@@ -53,7 +53,8 @@ flowchart TD
     L --> M["FileCache.save(to:)"]
     L --> N["Enabled detectors (sequential)"]
     N --> O["Merge CloneGroups"]
-    O --> P["PipelineResult"]
+    O --> P["Sort by type → file → startLine"]
+    P --> Q["PipelineResult"]
 ```
 
 ### Detector selection
@@ -110,10 +111,10 @@ let totalTokens: Int
 struct ProgressReporter: Sendable
 ```
 
-Writes a progress message to `stderr` after a configurable delay if the analysis is still running. Designed for text-format runs only.
+Writes a progress message to a configurable `FileHandle` (default `.standardError`) after a configurable delay if the analysis is still running. Designed for text-format runs only.
 
 ```swift
-init(totalFiles: Int, delayNanoseconds: UInt64 = 5_000_000_000)
+init(totalFiles: Int, delayNanoseconds: UInt64 = 5_000_000_000, output: FileHandle = .standardError)
 func start() async   // schedules the progress message after the delay
 func stop() async    // cancels the scheduled message
 func drain() async   // awaits the scheduled task to completion
