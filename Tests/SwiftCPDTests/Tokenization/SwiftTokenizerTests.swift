@@ -144,4 +144,13 @@ struct SwiftTokenizerTests {
         let helloToken = tokens.first { $0.text == "hello" }
         #expect(helloToken?.kind == .stringLiteral)
     }
+
+    @Test("Given C++ interop source with :: operator, when tokenizing, then returns punctuation")
+    func colonColonOperator() {
+        let source = "Foo::bar"
+        let tokens = tokenizer.tokenize(source: source, file: "test.swift")
+
+        let doubleColonToken = tokens.first { $0.text == "::" }
+        #expect(doubleColonToken?.kind == .punctuation)
+    }
 }
