@@ -51,6 +51,9 @@ jobs:
       - name: Test suites A-F cumulative then SuppressionScanner
         run: swift test --filter "AnalysisPipeline|ASGComparer|AnalysisResult|ArgumentParser|BagJaccardSimilarity|BaselineStore|BaselineWorkflow|BehaviorSignature|BlockExtractor|BlockFingerprint|CTokenizer|CloneDetector|CloneFragment|CloneGroup|CloneType|Configuration|Determinism|DuplicationCalculator|EndToEndAnalysis|ErrorHandlingIntegration|FileCache|FileHasher|SuppressionScanner" --no-parallel
 
+      - name: Test suites A-J cumulative then SuppressionScanner
+        run: swift test --filter "AnalysisPipeline|ASGComparer|AnalysisResult|ArgumentParser|BagJaccardSimilarity|BaselineStore|BaselineWorkflow|BehaviorSignature|BlockExtractor|BlockFingerprint|CTokenizer|CloneDetector|CloneFragment|CloneGroup|CloneType|Configuration|Determinism|DuplicationCalculator|EndToEndAnalysis|ErrorHandlingIntegration|FileCache|FileHasher|GlobMatcher|GreedyStringTiler|HelpText|HtmlReporter|JsonReporter|SuppressionScanner" --no-parallel
+
       - name: Test
         run: swift test --no-parallel
 
