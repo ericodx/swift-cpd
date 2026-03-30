@@ -36,6 +36,9 @@ jobs:
       - name: Build
         run: swift build
 
+      - name: Test SuppressionScanner (isolation)
+        run: swift test --filter "SuppressionScanner" --no-parallel
+
       - name: Test
         run: swift test --no-parallel
 
