@@ -1,8 +1,8 @@
-# Contributing to Swift Clone & Pattern Detector
+# Contributing to Swift Code Duplication Detector
 
-Thank you for your interest in contributing to **Swift Clone & Pattern Detector**.
+Thank you for your interest in contributing to **Swift Code Duplication Detector**.
 
-Swift Clone & Pattern Detector is a native Swift tool for detecting duplicate code in Swift and Objective-C/C codebases. It identifies four clone types: Type-1 (exact), Type-2 (parameterized), Type-3 (near-miss), and Type-4 (semantically equivalent), with optional cross-language analysis and Xcode integration.
+Swift Code Duplication Detector is a native Swift tool for detecting duplicate code in Swift and Objective-C/C codebases. It identifies four clone types: Type-1 (exact), Type-2 (parameterized), Type-3 (near-miss), and Type-4 (semantically equivalent), with optional cross-language analysis and Xcode integration.
 
 For an overview of the project goals and scope, see the [README](README.md).
 
@@ -17,7 +17,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ## Technical Principles
 
-Swift Clone & Pattern Detector follows a strict set of technical principles:
+Swift Code Duplication Detector follows a strict set of technical principles:
 
 - Detection must be **deterministic and reproducible**
 - The tool is **read-only** — it never modifies source files
