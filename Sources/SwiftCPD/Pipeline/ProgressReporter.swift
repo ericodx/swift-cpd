@@ -2,15 +2,21 @@ import Foundation
 
 struct ProgressReporter: Sendable {
 
-    init(totalFiles: Int, delayNanoseconds: UInt64 = 5_000_000_000) {
+    init(
+        totalFiles: Int,
+        delayNanoseconds: UInt64 = 5_000_000_000,
+        output: FileHandle = .standardError
+    ) {
         self.totalFiles = totalFiles
         self.delayNanoseconds = delayNanoseconds
+        self.output = output
         self.state = ProgressState()
     }
 
     let totalFiles: Int
     let delayNanoseconds: UInt64
 
+    private let output: FileHandle
     private let state: ProgressState
 
     @discardableResult
@@ -43,6 +49,6 @@ extension ProgressReporter {
 
     func writeProgress(_ message: String) {
         let data = Data((message + "\n").utf8)
-        FileHandle.standardError.write(data)
+        output.write(data)
     }
 }
