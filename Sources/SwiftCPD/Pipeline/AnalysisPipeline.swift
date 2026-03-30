@@ -51,8 +51,17 @@ struct AnalysisPipeline: Sendable {
             allClones += filterByEnabledTypes(detected)
         }
 
+        let sortedClones = allClones.sorted {
+            guard let lhs = $0.fragments.first, let rhs = $1.fragments.first else { return false }
+
+            if $0.type.rawValue != $1.type.rawValue { return $0.type.rawValue < $1.type.rawValue }
+            if lhs.file != rhs.file { return lhs.file < rhs.file }
+
+            return lhs.startLine < rhs.startLine
+        }
+
         return PipelineResult(
-            cloneGroups: allClones,
+            cloneGroups: sortedClones,
             totalTokens: totalTokens
         )
     }
