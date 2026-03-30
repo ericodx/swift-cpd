@@ -119,6 +119,14 @@ repos:
         types: [swift]
         args: ["--path", "Sources"]
 
+  # Gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
+        name: ✓ Gitleaks
+        description: Detect hardcoded secrets and credentials before they are committed.
+
   # Local hooks
   - repo: local
     hooks:
