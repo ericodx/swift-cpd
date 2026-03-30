@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Swift Clone & Pattern Detector is currently under active development.
+Swift Code Duplication Detector is currently under active development.
 
 Only the **latest release** is supported with security updates.
 
@@ -16,7 +16,7 @@ Pre-release versions (`0.x`) do not carry stability or security guarantees.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Swift Clone & Pattern Detector, please **do not open a public issue**.
+If you discover a security vulnerability in Swift Code Duplication Detector, please **do not open a public issue**.
 
 Instead, report it privately by opening a **GitHub Security Advisory**:
 
@@ -63,4 +63,4 @@ We aim to balance transparency with user safety.
 
 We kindly ask reporters to allow reasonable time for investigation and fixes before any public disclosure.
 
-Thank you for helping keep Swift Clone & Pattern Detector secure.
+Thank you for helping keep Swift Code Duplication Detector secure.

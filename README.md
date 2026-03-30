@@ -1,4 +1,4 @@
-# Swift Clone & Pattern Detector
+# Swift Code Duplication Detector
 
 [![Swift Package Index](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fericodx%2Fswift-cpd%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ericodx/swift-cpd)
 [![Swift Package Index](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fericodx%2Fswift-cpd%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ericodx/swift-cpd)
@@ -6,18 +6,31 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=deploy-on-friday-swift-cpd&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=deploy-on-friday-swift-cpd)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=deploy-on-friday-swift-cpd&metric=coverage)](https://sonarcloud.io/summary/new_code?id=deploy-on-friday-swift-cpd)
 
-**Detect duplicated code in Swift and Objective-C/C codebases.**
+**Detect and eliminate duplicated logic in Swift and Objective-C/C codebases to improve maintainability and code quality.**
 
-`swift-cpd` is a Clone & Pattern Detector built on SwiftSyntax. It finds four types of code clones — from exact copies to semantically equivalent implementations — and integrates with the CLI, Xcode, SPM, CI pipelines, and git hooks.
+`swift-cpd` performs structural analysis to detect duplication patterns across Swift, Objective-C, and C codebases, going beyond simple text-based detection.
 
-## Clone types
+---
 
-| Type | Name | Description |
-|---|---|---|
-| 1 | Exact | Identical code after whitespace and comment removal |
-| 2 | Parameterized | Same structure, different variable names or literals |
-| 3 | Near-miss | Similar code with additions, deletions, or reordering |
-| 4 | Semantic | Different implementation, equivalent behavior |
+## Why
+
+Code duplication leads to:
+- inconsistent behavior across features
+- fragile refactors and hidden regressions
+- increased maintenance cost and cognitive load
+
+`swift-cpd` helps you detect and address duplication early, supporting long-term code health and developer productivity.
+
+---
+
+## Features
+
+- Structural duplication detection (AST-based)
+- Works with Swift, Objective-C, and C codebases
+- Enforces duplication rules in CI pipelines
+- Supports code quality and governance practices
+
+---
 
 ## Install
 
