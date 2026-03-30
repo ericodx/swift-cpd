@@ -37,7 +37,8 @@ enum TokenKind: String, Sendable, Equatable, Hashable, Codable
 | `.floatingLiteral` | Both | `3.14` |
 | `.stringLiteral` | Both | `"hello"` |
 | `.operatorToken` | Both | `+`, `==`, `!=`, `->` |
-| `.punctuation` | Both | `(`, `)`, `{`, `}`, `,`, `;` |
+| `.punctuation` | Both | `(`, `)`, `{`, `}`, `,`, `;`, `::` |
+| `.colonColon` | `SwiftTokenizer` | `::` C++ namespace qualifier (swift-syntax 603+) |
 
 `typeName` is distinct from `identifier` so that `TokenNormalizer` can produce the `$TYPE` placeholder only for names that appear in type-annotation positions, improving clone precision.
 

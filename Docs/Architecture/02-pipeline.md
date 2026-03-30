@@ -38,7 +38,8 @@ flowchart TD
     end
 
     E --> F[Merge · Deduplicate]
-    F --> G[PipelineResult]
+    F --> G["Sort by type → file → startLine"]
+    G --> H[PipelineResult]
 ```
 
 ## Key Data Structures
