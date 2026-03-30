@@ -39,6 +39,9 @@ jobs:
       - name: Test SuppressionScanner (isolation)
         run: swift test --filter "SuppressionScanner" --no-parallel
 
+      - name: Test ProgressReporter then SuppressionScanner
+        run: swift test --filter "ProgressReporter|SuppressionScanner" --no-parallel
+
       - name: Test
         run: swift test --no-parallel
 
