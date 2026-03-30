@@ -42,6 +42,9 @@ jobs:
       - name: Test ProgressReporter then SuppressionScanner
         run: swift test --filter "ProgressReporter|SuppressionScanner" --no-parallel
 
+      - name: Test suites A-C then SuppressionScanner
+        run: swift test --filter "AnalysisPipeline|ASGComparer|AnalysisResult|ArgumentParser|BagJaccardSimilarity|BaselineStore|BaselineWorkflow|BehaviorSignature|BlockExtractor|BlockFingerprint|CTokenizer|CloneDetector|CloneFragment|CloneGroup|CloneType|Configuration|SuppressionScanner" --no-parallel
+
       - name: Test
         run: swift test --no-parallel
 
