@@ -85,4 +85,58 @@ struct GreedyStringTilerTests {
         let expected = (2.0 * Double(expectedCovered)) / Double(tokensA.count + tokensB.count)
         #expect(similarity == expected)
     }
+
+    @Test("Given two equal-length matches at minimum tile size, when computing similarity, then both matches are found")
+    func twoEqualLengthMatchesAtMinimumTileSize() {
+        let tiler = GreedyStringTiler(minimumTileSize: 2)
+        let tokensA = makeSimpleTokens(["a", "b", "x", "c", "d"])
+        let tokensB = makeSimpleTokens(["a", "b", "y", "c", "d"])
+
+        let similarity = tiler.similarity(between: tokensA, and: tokensB)
+
+        let expectedCovered = 4
+        let expected = (2.0 * Double(expectedCovered)) / Double(tokensA.count + tokensB.count)
+        #expect(similarity == expected)
+    }
+
+    @Test(
+        "Given overlapping shared region, when computing similarity, then marked tokens prevent double counting"
+    )
+    func markedTokensPreventDoubleCounting() {
+        let tiler = GreedyStringTiler(minimumTileSize: 2)
+        let tokensA = makeSimpleTokens(["a", "b", "c"])
+        let tokensB = makeSimpleTokens(["a", "b", "c", "x", "a", "b", "c"])
+
+        let similarity = tiler.similarity(between: tokensA, and: tokensB)
+
+        let expectedCovered = 3
+        let expected = (2.0 * Double(expectedCovered)) / Double(tokensA.count + tokensB.count)
+        #expect(similarity == expected)
+    }
+
+    @Test("Given tokens requiring multiple tiling passes, when computing similarity, then all tiles are discovered")
+    func multipleTilingPasses() {
+        let tiler = GreedyStringTiler(minimumTileSize: 2)
+        let tokensA = makeSimpleTokens(["a", "b", "c", "x", "y", "d", "e"])
+        let tokensB = makeSimpleTokens(["a", "b", "c", "z", "w", "d", "e"])
+
+        let similarity = tiler.similarity(between: tokensA, and: tokensB)
+
+        let expectedCovered = 5
+        let expected = (2.0 * Double(expectedCovered)) / Double(tokensA.count + tokensB.count)
+        #expect(similarity == expected)
+    }
+
+    @Test("Given a token marked in only one sequence, when computing similarity, then that match is rejected")
+    func markedInOneSequenceRejectsMatch() {
+        let tiler = GreedyStringTiler(minimumTileSize: 2)
+        let tokensA = makeSimpleTokens(["a", "b", "c", "d", "a", "b"])
+        let tokensB = makeSimpleTokens(["a", "b", "x", "y"])
+
+        let similarity = tiler.similarity(between: tokensA, and: tokensB)
+
+        let expectedCovered = 2
+        let expected = (2.0 * Double(expectedCovered)) / Double(tokensA.count + tokensB.count)
+        #expect(similarity == expected)
+    }
 }
