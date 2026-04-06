@@ -111,6 +111,53 @@ struct Type3DetectorTests {
         #expect(results.isEmpty)
     }
 
+    @Test("Given candidate pair exactly at threshold, when detecting, then includes it")
+    func candidateAtExactThreshold() {
+        let sourceA = """
+            func processA(_ items: [Int]) -> [Int] {
+                var result: [Int] = []
+                for item in items {
+                    if item > 0 {
+                        result.append(item * 2)
+                    }
+                }
+                return result
+            }
+            """
+
+        let sourceB = """
+            func processB(_ values: [Int]) -> [Int] {
+                var output: [Int] = []
+                for value in values {
+                    if value > 0 {
+                        output.append(value * 2)
+                    }
+                }
+                return output
+            }
+            """
+
+        let files = [
+            makeFileTokens(source: sourceA, file: "A.swift"),
+            makeFileTokens(source: sourceB, file: "B.swift"),
+        ]
+
+        let detector = Type3Detector(
+            similarityThreshold: 50.0,
+            minimumTileSize: 2,
+            minimumTokenCount: 5,
+            minimumLineCount: 2,
+            candidateFilterThreshold: 10.0
+        )
+
+        let results = detector.detect(files: files)
+
+        #expect(!results.isEmpty)
+        for clone in results {
+            #expect(clone.similarity >= 50.0)
+        }
+    }
+
     @Test("Given single file, when detecting, then returns no clones")
     func singleFile() {
         let source = """
