@@ -24,6 +24,24 @@ struct TextReporterTests {
         #expect(output.contains("42 files"))
     }
 
+    @Test("Given no clones with filtered clones, when reporting, then shows filtered count")
+    func noClonesWithFilteredCount() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 10,
+            executionTime: 0.3,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            filteredCloneCount: 7
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("No clones detected"))
+        #expect(output.contains("7 clone(s) filtered by configuration"))
+    }
+
     @Test("Given one clone group, when reporting, then formats header and fragments")
     func singleClone() {
         let clone = CloneGroup(
