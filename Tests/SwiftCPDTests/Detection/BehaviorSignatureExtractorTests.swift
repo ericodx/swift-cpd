@@ -260,7 +260,7 @@ struct BehaviorSignatureExtractorTests {
         #expect(!signature.calledFunctions.isEmpty)
     }
 
-    @Test("Given variable defined but never used, when extracting, then produces defineOnly pattern")
+    @Test("Given variable defined but never used, when extracting, then produces only defineOnly pattern")
     func defineOnlyPattern() {
         let source = """
             func unused() {
@@ -271,7 +271,7 @@ struct BehaviorSignatureExtractorTests {
         let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 3)
             .extract()
 
-        #expect(signature.dataFlowPatterns.contains(.defineOnly))
+        #expect(signature.dataFlowPatterns == [.defineOnly])
     }
 
     @Test("Given parameter used in body, when extracting, then produces parameterUse pattern")
