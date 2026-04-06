@@ -86,7 +86,9 @@ extension SwiftCPD {
 
         await progressReporter.stop()
 
+        let unfilteredCount = pipelineResult.cloneGroups.count
         let cloneGroups = filterCloneGroups(pipelineResult.cloneGroups, configuration: configuration)
+        let filteredCloneCount = unfilteredCount - cloneGroups.count
 
         let result = AnalysisResult(
             cloneGroups: cloneGroups,
@@ -94,7 +96,8 @@ extension SwiftCPD {
             executionTime: executionTime,
             totalTokens: pipelineResult.totalTokens,
             minimumTokenCount: configuration.minimumTokenCount,
-            minimumLineCount: configuration.minimumLineCount
+            minimumLineCount: configuration.minimumLineCount,
+            filteredCloneCount: filteredCloneCount
         )
 
         switch configuration.baselineMode {
@@ -165,7 +168,8 @@ extension SwiftCPD {
             executionTime: result.executionTime,
             totalTokens: result.totalTokens,
             minimumTokenCount: result.minimumTokenCount,
-            minimumLineCount: result.minimumLineCount
+            minimumLineCount: result.minimumLineCount,
+            filteredCloneCount: result.filteredCloneCount
         )
 
         let reporter = makeReporter(configuration.outputFormat)
