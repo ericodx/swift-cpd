@@ -27,6 +27,13 @@ struct BagJaccardSimilarityTests {
         #expect(similarity == 1.0)
     }
 
+    @Test("Given one empty and one non-empty array, when calculating similarity, then returns 0.0")
+    func oneEmptyOneNonEmpty() {
+        let similarity = BagJaccardSimilarity.calculate(["x"], [String]())
+
+        #expect(similarity == 0.0)
+    }
+
     @Test("Given completely disjoint arrays, when calculating similarity, then returns 0.0")
     func disjointArrays() {
         let tokensA = ["let", "x"]

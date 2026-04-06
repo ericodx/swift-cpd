@@ -210,6 +210,27 @@ struct YamlConfigurationParserTests {
         #expect(config.outputFormat == "'")
     }
 
+    @Test("Given value starting with double-quote but not ending with it, when parsing, then does not strip quotes")
+    func mismatchedDoubleQuote() throws {
+        let config = try parser.parse("outputFormat: \"json")
+
+        #expect(config.outputFormat == "\"json")
+    }
+
+    @Test("Given value starting with single-quote but not ending with it, when parsing, then does not strip quotes")
+    func mismatchedSingleQuote() throws {
+        let config = try parser.parse("outputFormat: 'json")
+
+        #expect(config.outputFormat == "'json")
+    }
+
+    @Test("Given exactly two double-quote chars, when parsing, then unquotes to empty string")
+    func emptyDoubleQuotedString() throws {
+        let config = try parser.parse(#"outputFormat: """#)
+
+        #expect(config.outputFormat == "")
+    }
+
     @Test("Given empty content, when parsing, then returns all-nil config")
     func emptyContentReturnsAllNil() throws {
         let config = try parser.parse("")

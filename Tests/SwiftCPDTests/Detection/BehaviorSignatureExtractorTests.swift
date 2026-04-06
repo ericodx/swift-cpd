@@ -287,4 +287,125 @@ struct BehaviorSignatureExtractorTests {
 
         #expect(signature.dataFlowPatterns.contains(.parameterUse))
     }
+
+    @Test(
+        "Given function with param, return, and body type annotations, when extracting, then all in typeSignatures"
+    )
+    func allTypeAnnotationSources() {
+        let source = """
+            func convert(_ value: Int) -> String {
+                let result: Double = Double(value)
+                return String(result)
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 4)
+            .extract()
+
+        #expect(signature.typeSignatures.contains("Int"))
+        #expect(signature.typeSignatures.contains("String"))
+        #expect(signature.typeSignatures.contains("Double"))
+    }
+
+    @Test(
+        "Given function with parameter type annotation, when extracting, then parameter type is in typeSignatures"
+    )
+    func parameterTypeCollected() {
+        let source = """
+            func identity(_ value: Bool) {
+                print(value)
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 3)
+            .extract()
+
+        #expect(signature.typeSignatures.contains("Bool"))
+    }
+
+    @Test("Given function with return type, when extracting, then return type collected in typeSignatures")
+    func returnTypeCollected() {
+        let source = """
+            func makeValue() -> Int {
+                return 42
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 3)
+            .extract()
+
+        #expect(signature.typeSignatures.contains("Int"))
+    }
+
+    @Test("Given function with body type annotation, when extracting, then body type collected in typeSignatures")
+    func bodyTypeAnnotationCollected() {
+        let source = """
+            func compute() {
+                let x: Float = 3.14
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 3)
+            .extract()
+
+        #expect(signature.typeSignatures.contains("Float"))
+    }
+
+    @Test(
+        "Given parameter and non-parameter variable both used, when extracting, then parameterUse and useOnly distinct"
+    )
+    func parameterUseVsUseOnly() {
+        let source = """
+            func process(input: Int) {
+                let local = input + globalValue
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 3)
+            .extract()
+
+        #expect(signature.dataFlowPatterns.contains(.parameterUse))
+        #expect(signature.dataFlowPatterns.contains(.useOnly))
+    }
+
+    @Test("Given variable used but not defined and not a parameter, when extracting, then produces useOnly pattern")
+    func useOnlyForNonParameterVariable() {
+        let source = """
+            func fetch() {
+                print(externalValue)
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 3)
+            .extract()
+
+        #expect(signature.dataFlowPatterns.contains(.useOnly))
+        #expect(!signature.dataFlowPatterns.contains(.parameterUse))
+    }
+
+    @Test(
+        "Given function producing multiple pattern types, when extracting, then dataFlowPatterns sorted by rawValue"
+    )
+    func dataFlowPatternsSortedByRawValue() {
+        let source = """
+            func mixed(param: Int) {
+                let defined = param + externalVar
+                let reused = defined + 1
+                let unused = 99
+            }
+            """
+
+        let signature = BehaviorSignatureExtractor(source: source, file: "test.swift", startLine: 1, endLine: 5)
+            .extract()
+
+        let patterns = signature.dataFlowPatterns
+        for index in 0 ..< (patterns.count - 1) {
+            #expect(patterns[index].rawValue <= patterns[index + 1].rawValue)
+        }
+
+        #expect(patterns.count >= 3)
+        #expect(patterns.contains(.defineAndUse))
+        #expect(patterns.contains(.defineOnly))
+        #expect(patterns.contains(.parameterUse))
+    }
 }

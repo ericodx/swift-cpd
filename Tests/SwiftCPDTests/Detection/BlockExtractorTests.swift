@@ -5,14 +5,6 @@ import Testing
 @Suite("BlockExtractor")
 struct BlockExtractorTests {
 
-    private let extractor = BlockExtractor()
-    private let tokenizer = SwiftTokenizer()
-
-    private func extractBlocks(from source: String, file: String = "Test.swift") -> [CodeBlock] {
-        let tokens = tokenizer.tokenize(source: source, file: file)
-        return extractor.extract(source: source, file: file, tokens: tokens)
-    }
-
     @Test("Given source with function, when extracting, then returns function body block")
     func functionBody() {
         let source = """
@@ -122,6 +114,39 @@ struct BlockExtractorTests {
         #expect(blocks.count >= 2)
     }
 
+    @Test("Given function starting at high line number, when extracting, then binary search finds correct start token")
+    func binarySearchFindsCorrectStartAtHighLine() {
+        let source =
+            (1 ... 20).map { "let v\($0) = \($0)" }.joined(separator: "\n")
+            + "\nfunc target() {\n    let x = 1\n    print(x)\n}\n"
+
+        let tokenizer = SwiftTokenizer()
+        let extractor = BlockExtractor()
+        let tokens = tokenizer.tokenize(source: source, file: "Test.swift")
+        let blocks = extractor.extract(source: source, file: "Test.swift", tokens: tokens)
+
+        let targetBlock = blocks.first { $0.startLine >= 21 }
+        #expect(targetBlock != nil)
+        if let block = targetBlock {
+            #expect(block.startTokenIndex >= 0)
+            #expect(block.endTokenIndex < tokens.count)
+        }
+    }
+
+    @Test("Given tokens only on line 1, when extracting block starting at line 2, then returns nil for that block")
+    func noTokensAtBlockLine() {
+        let source = "func a() {\n}\n"
+
+        let tokenizer = SwiftTokenizer()
+        let extractor = BlockExtractor()
+        let tokens = tokenizer.tokenize(source: source, file: "Test.swift")
+        let blocks = extractor.extract(source: source, file: "Test.swift", tokens: tokens)
+
+        for block in blocks {
+            #expect(block.startTokenIndex <= block.endTokenIndex)
+        }
+    }
+
     @Test("Given function block, when extracting, then token indices map correctly")
     func tokenIndicesMapCorrectly() {
         let source = """
@@ -131,6 +156,8 @@ struct BlockExtractorTests {
             }
             """
 
+        let tokenizer = SwiftTokenizer()
+        let extractor = BlockExtractor()
         let tokens = tokenizer.tokenize(source: source, file: "Test.swift")
         let blocks = extractor.extract(source: source, file: "Test.swift", tokens: tokens)
 

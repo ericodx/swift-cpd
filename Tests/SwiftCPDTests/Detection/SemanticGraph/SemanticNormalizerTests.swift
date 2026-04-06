@@ -550,4 +550,47 @@ struct SemanticNormalizerTests {
         let kinds = graph.nodes.map { $0.kind }
         #expect(kinds.contains(.literalValue))
     }
+
+    @Test("Given guard-else-return, when normalizing, then controlFlow edge connects conditional to guardExit")
+    func guardElseReturnEdge() {
+        let source = """
+            func process(_ items: [Int]) -> Int {
+                guard !items.isEmpty else { return 0 }
+                return items.count
+            }
+            """
+
+        let graph = SemanticNormalizer(source: source, file: "test.swift", startLine: 1, endLine: 4).normalize()
+
+        let conditionalIndex = graph.nodes.firstIndex { $0.kind == .conditional }!
+        let guardExitIndex = graph.nodes.firstIndex { $0.kind == .guardExit }!
+        let conditionalId = graph.nodes[conditionalIndex].id
+        let guardExitId = graph.nodes[guardExitIndex].id
+
+        let hasControlFlowEdge = graph.edges.contains {
+            $0.from == conditionalId && $0.to == guardExitId && $0.kind == .controlFlow
+        }
+        #expect(hasControlFlowEdge)
+    }
+
+    @Test("Given guard-let, when normalizing, then controlFlow edge connects conditional to optionalUnwrap")
+    func guardLetEdge() {
+        let source = """
+            func process(_ value: Int?) -> Int {
+                guard let unwrapped = value else { return 0 }
+                return unwrapped
+            }
+            """
+
+        let graph = SemanticNormalizer(source: source, file: "test.swift", startLine: 1, endLine: 4).normalize()
+
+        let conditionalId = graph.nodes.first { $0.kind == .conditional }!.id
+        let unwrapId = graph.nodes.first { $0.kind == .optionalUnwrap }!.id
+
+        let hasEdge = graph.edges.contains {
+            $0.from == conditionalId && $0.to == unwrapId && $0.kind == .controlFlow
+        }
+        #expect(hasEdge)
+    }
+
 }

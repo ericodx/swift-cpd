@@ -240,6 +240,28 @@ struct SuppressionScannerTests {
     }
 
     @Test(
+        "Given suppression tag at last line of file, when scanning, then startLine equals lineCount and range is valid"
+    )
+    func suppressionTagAtExactLastLine() {
+        let source = "// swiftcpd:ignore"
+
+        let suppressed = scanner.suppressedLines(in: source)
+
+        #expect(suppressed.contains(2))
+    }
+
+    @Test("Given suppression before unclosed block with multiple lines, when scanning, then endLine is line - 1")
+    func unclosedBlockEndLineCalculation() {
+        let source = "// swiftcpd:ignore\nfunc open() {\n    let x = 1\n    let y = 2"
+
+        let suppressed = scanner.suppressedLines(in: source)
+
+        #expect(suppressed.contains(2))
+        #expect(suppressed.contains(3))
+        #expect(suppressed.contains(4))
+    }
+
+    @Test(
         "Given annotation before block with multiple empty lines, when scanning, then skips blanks and suppresses block"
     )
     func annotationWithMultipleBlankLinesBeforeBlock() {

@@ -31,4 +31,49 @@ struct CloneFragmentTests {
         #expect(fragment.startColumn == 5)
         #expect(fragment.endColumn == 42)
     }
+
+    @Test(
+        "Given tokens with known locations, when creating fragment, then endColumn equals last token column plus length"
+    )
+    func endColumnCalculation() {
+        let tokens = [
+            Token(kind: .keyword, text: "func", location: SourceLocation(file: "A.swift", line: 5, column: 3)),
+            Token(kind: .identifier, text: "hello", location: SourceLocation(file: "A.swift", line: 5, column: 8)),
+            Token(kind: .identifier, text: "world", location: SourceLocation(file: "A.swift", line: 6, column: 10)),
+        ]
+
+        let fragment = CloneFragment(file: "A.swift", tokens: tokens, startIndex: 0, endIndex: 2)
+
+        #expect(fragment.file == "A.swift")
+        #expect(fragment.startLine == 5)
+        #expect(fragment.endLine == 6)
+        #expect(fragment.startColumn == 3)
+        #expect(fragment.endColumn == 15)
+    }
+
+    @Test("Given a single-character last token, when creating fragment, then endColumn equals column plus one")
+    func endColumnWithSingleCharToken() {
+        let tokens = [
+            Token(kind: .identifier, text: "x", location: SourceLocation(file: "B.swift", line: 1, column: 1)),
+            Token(kind: .identifier, text: "y", location: SourceLocation(file: "B.swift", line: 1, column: 4)),
+        ]
+
+        let fragment = CloneFragment(file: "B.swift", tokens: tokens, startIndex: 0, endIndex: 1)
+
+        #expect(fragment.endColumn == 5)
+    }
+
+    @Test("Given a single token range, when creating fragment, then start and end lines match that token")
+    func singleTokenFragment() {
+        let tokens = [
+            Token(kind: .identifier, text: "abc", location: SourceLocation(file: "C.swift", line: 7, column: 12))
+        ]
+
+        let fragment = CloneFragment(file: "C.swift", tokens: tokens, startIndex: 0, endIndex: 0)
+
+        #expect(fragment.startLine == 7)
+        #expect(fragment.endLine == 7)
+        #expect(fragment.startColumn == 12)
+        #expect(fragment.endColumn == 15)
+    }
 }

@@ -173,6 +173,20 @@ struct ArgumentParserTests {
         }
     }
 
+    @Test("Given --max-duplication with value 0, when parsing, then accepts boundary value")
+    func duplicationValueZeroAccepted() throws {
+        let result = try parser.parse(["swift-cpd", "--max-duplication", "0", "Sources/"])
+
+        #expect(result.maxDuplication == 0.0)
+    }
+
+    @Test("Given --max-duplication with value 100, when parsing, then accepts boundary value")
+    func duplicationValueHundredAccepted() throws {
+        let result = try parser.parse(["swift-cpd", "--max-duplication", "100", "Sources/"])
+
+        #expect(result.maxDuplication == 100.0)
+    }
+
     @Test("Given no arguments, when parsing, then returns empty defaults")
     func emptyArgumentsReturnsDefaults() throws {
         let result = try parser.parse(["swift-cpd"])

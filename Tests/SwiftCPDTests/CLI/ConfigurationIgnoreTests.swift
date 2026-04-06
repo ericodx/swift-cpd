@@ -111,6 +111,24 @@ struct ConfigurationIgnoreTests {
         #expect(config.ignoreStructural == true)
     }
 
+    @Test("Given no CLI or YAML ignoreSameFile, when creating configuration, then defaults to false")
+    func defaultIgnoreSameFileIsFalse() throws {
+        let parsed = ParsedArguments(paths: ["Sources/"])
+
+        let config = try Configuration(from: parsed)
+
+        #expect(config.ignoreSameFile == false)
+    }
+
+    @Test("Given no CLI or YAML ignoreStructural, when creating configuration, then defaults to false")
+    func defaultIgnoreStructuralIsFalse() throws {
+        let parsed = ParsedArguments(paths: ["Sources/"])
+
+        let config = try Configuration(from: parsed)
+
+        #expect(config.ignoreStructural == false)
+    }
+
     @Test("Given YAML enabled clone types without CLI, when creating configuration, then uses YAML value")
     func yamlEnabledCloneTypesFallback() throws {
         let parsed = ParsedArguments(paths: ["Sources/"])

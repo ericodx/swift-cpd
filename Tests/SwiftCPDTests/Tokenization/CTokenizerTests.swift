@@ -308,4 +308,234 @@ struct CTokenizerTests {
         let texts = tokens.map(\.text)
         #expect(texts.contains("/"))
     }
+
+    @Test("Given block comment between tokens, when tokenizing, then both surrounding tokens are present")
+    func blockCommentAdvancePastOpening() {
+        let source = "a/* */b"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        let texts = tokens.map(\.text)
+        #expect(texts == ["a", "b"])
+    }
+
+    @Test("Given preprocessor directive with content, when tokenizing, then advances past all directive characters")
+    func preprocessorDirectiveAdvancesPastContent() {
+        let source = "#define FOO 1\nx"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        let texts = tokens.map(\.text)
+        #expect(texts == ["x"])
+        #expect(tokens.count == 1)
+    }
+
+    @Test("Given at-keyword with trailing content, when tokenizing, then advances past all keyword characters")
+    func atKeywordAdvancesPastAllCharacters() {
+        let source = "@interface x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].text == "@interface")
+        #expect(tokens[0].kind == .keyword)
+        #expect(tokens[1].text == "x")
+        #expect(tokens[1].kind == .identifier)
+    }
+
+    @Test("Given string with closing quote, when tokenizing, then stops at closing quote")
+    func stringStopsAtClosingQuote() {
+        let source = "\"hello\" x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .stringLiteral)
+        #expect(tokens[0].text == "hello")
+        #expect(tokens[1].kind == .identifier)
+        #expect(tokens[1].text == "x")
+    }
+
+    @Test(
+        "Given string with escape followed by more content, when tokenizing, then escape consumed and next token ok"
+    )
+    func stringEscapeAdvancesPastEscapedCharacter() {
+        let source = "\"a\\nb\" x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .stringLiteral)
+        #expect(tokens[0].text == "ab")
+        #expect(tokens[1].kind == .identifier)
+        #expect(tokens[1].text == "x")
+    }
+
+    @Test("Given unclosed string at end of input, when tokenizing, then returns string token gracefully")
+    func unclosedStringAtEndOfInput() {
+        let source = "\"hello"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 1)
+        #expect(tokens[0].kind == .stringLiteral)
+        #expect(tokens[0].text == "hello")
+    }
+
+    @Test("Given string with escape at end of input, when tokenizing, then handles gracefully")
+    func stringEscapeAtEndOfInput() {
+        let source = "\"hello\\"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 1)
+        #expect(tokens[0].kind == .stringLiteral)
+    }
+
+    @Test("Given char literal with closing quote, when tokenizing, then stops at closing quote")
+    func charLiteralStopsAtClosingQuote() {
+        let source = "'a' x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .integerLiteral)
+        #expect(tokens[0].text == "a")
+        #expect(tokens[1].kind == .identifier)
+        #expect(tokens[1].text == "x")
+    }
+
+    @Test("Given char literal with escape followed by more content, when tokenizing, then escape is consumed correctly")
+    func charLiteralEscapeAdvancesPastEscapedCharacter() {
+        let source = "'\\n' x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .integerLiteral)
+        #expect(tokens[0].text == "n")
+        #expect(tokens[1].kind == .identifier)
+        #expect(tokens[1].text == "x")
+    }
+
+    @Test("Given unclosed char literal at end of input, when tokenizing, then returns token gracefully")
+    func unclosedCharLiteralAtEndOfInput() {
+        let source = "'a"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 1)
+        #expect(tokens[0].kind == .integerLiteral)
+        #expect(tokens[0].text == "a")
+    }
+
+    @Test("Given char literal with escape at end of input, when tokenizing, then handles gracefully")
+    func charLiteralEscapeAtEndOfInput() {
+        let source = "'\\"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 1)
+        #expect(tokens[0].kind == .integerLiteral)
+    }
+
+    @Test("Given identifier followed by punctuation, when tokenizing, then advance stops at non-identifier character")
+    func identifierAdvancesCorrectly() {
+        let source = "abc;"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .identifier)
+        #expect(tokens[0].text == "abc")
+        #expect(tokens[1].kind == .punctuation)
+        #expect(tokens[1].text == ";")
+    }
+
+    @Test("Given hex number followed by non-hex character, when tokenizing, then stops at non-hex character")
+    func hexNumberStopsAtNonHexCharacter() {
+        let source = "0xFF;"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .integerLiteral)
+        #expect(tokens[0].text == "0xFF")
+        #expect(tokens[1].kind == .punctuation)
+        #expect(tokens[1].text == ";")
+    }
+
+    @Test("Given float followed by punctuation, when tokenizing, then stops scanning decimal digits at non-digit")
+    func floatDecimalStopsAtNonDigit() {
+        let source = "3.14;"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .floatingLiteral)
+        #expect(tokens[0].text == "3.14")
+        #expect(tokens[1].kind == .punctuation)
+        #expect(tokens[1].text == ";")
+    }
+
+    @Test("Given number with negative exponent sign, when tokenizing, then consumes sign correctly")
+    func numberWithNegativeExponentSign() {
+        let source = "1e-3;"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .floatingLiteral)
+        #expect(tokens[0].text == "1e-3")
+        #expect(tokens[1].kind == .punctuation)
+        #expect(tokens[1].text == ";")
+    }
+
+    @Test("Given number with positive exponent sign, when tokenizing, then consumes sign correctly")
+    func numberWithPositiveExponentSign() {
+        let source = "2e+10;"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .floatingLiteral)
+        #expect(tokens[0].text == "2e+10")
+        #expect(tokens[1].kind == .punctuation)
+        #expect(tokens[1].text == ";")
+    }
+
+    @Test("Given block comment with content inside, when tokenizing, then fully consumes comment body")
+    func blockCommentWithContentFullyConsumed() {
+        let source = "a /*hello world*/ b"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        let texts = tokens.map(\.text)
+        #expect(texts == ["a", "b"])
+    }
+
+    @Test("Given multiple escape sequences in string, when tokenizing, then all escapes are handled")
+    func multipleEscapeSequencesInString() {
+        let source = "\"\\t\\n\\r\" x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .stringLiteral)
+        #expect(tokens[0].text == "")
+        #expect(tokens[1].text == "x")
+    }
+
+    @Test("Given hex number at end of input, when tokenizing, then returns complete hex token")
+    func hexNumberAtEndOfInput() {
+        let source = "0xAB"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 1)
+        #expect(tokens[0].kind == .integerLiteral)
+        #expect(tokens[0].text == "0xAB")
+    }
+
+    @Test("Given float at end of input, when tokenizing, then returns complete float token")
+    func floatAtEndOfInput() {
+        let source = "3.14"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 1)
+        #expect(tokens[0].kind == .floatingLiteral)
+        #expect(tokens[0].text == "3.14")
+    }
+
+    @Test("Given exponent number without sign, when tokenizing, then handles correctly")
+    func exponentWithoutSign() {
+        let source = "1e5;"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        #expect(tokens.count == 2)
+        #expect(tokens[0].kind == .floatingLiteral)
+        #expect(tokens[0].text == "1e5")
+        #expect(tokens[1].text == ";")
+    }
 }
