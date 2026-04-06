@@ -130,6 +130,65 @@ struct JsonReporterTests {
         #expect(clones[1]["id"] as? String == "clone-002")
     }
 
+    @Test(
+        "Given analysis result with known execution time, when reporting, then executionTimeMs is correctly calculated"
+    )
+    func executionTimeMsCalculation() throws {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 1,
+            executionTime: 2.5,
+            totalTokens: 100,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+        let data = try #require(output.data(using: .utf8))
+        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let metadata = try #require(json["metadata"] as? [String: Any])
+
+        #expect(metadata["executionTimeMs"] as? Int == 2500)
+    }
+
+    @Test("Given fragment where endLine exceeds file lines, when reporting, then preview clamps correctly")
+    func previewClampsEndLineToFileLength() throws {
+        let tempDir = NSTemporaryDirectory() + "JsonReporterClamp-" + UUID().uuidString
+        try FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: tempDir) }
+
+        let filePath = tempDir + "/Short.swift"
+        let source = "let x = 1\nlet y = 2\n"
+        try source.write(toFile: filePath, atomically: true, encoding: .utf8)
+
+        let clone = CloneGroup(
+            type: .type1,
+            tokenCount: 50,
+            lineCount: 10,
+            similarity: 100.0,
+            fragments: [
+                CloneFragment(file: filePath, startLine: 1, endLine: 10, startColumn: 1, endColumn: 2),
+                CloneFragment(file: filePath, startLine: 1, endLine: 10, startColumn: 1, endColumn: 2),
+            ]
+        )
+        let result = AnalysisResult(
+            cloneGroups: [clone],
+            filesAnalyzed: 1,
+            executionTime: 0.1,
+            totalTokens: 100,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+        let data = try #require(output.data(using: .utf8))
+        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let clones = try #require(json["clones"] as? [[String: Any]])
+        let fragments = try #require(clones[0]["fragments"] as? [[String: Any]])
+
+        #expect(fragments[0]["preview"] as? String == "let x = 1 ... }")
+    }
+
     @Test("Given analysis result, when reporting, then metadata contains configuration and totalTokens")
     func metadataContainsConfigurationAndTotalTokens() throws {
         let result = AnalysisResult(

@@ -77,6 +77,49 @@ struct HtmlReporterTests {
         #expect(output.contains("0 clone(s)"))
     }
 
+    @Test("Given no clones with zero filtered count, when reporting, then does not show filtered message")
+    func noClonesWithZeroFilteredCount() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 5,
+            executionTime: 0.1,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            filteredCloneCount: 0
+        )
+
+        let output = reporter.report(result)
+
+        #expect(!output.contains("filtered"))
+    }
+
+    @Test("Given multiple clones, when reporting, then clone numbers are sequential starting at 1")
+    func cloneNumbersAreSequential() {
+        let clone1 = CloneGroup(
+            type: .type1, tokenCount: 50, lineCount: 8, similarity: 100.0,
+            fragments: [CloneFragment(file: "A.swift", startLine: 1, endLine: 8, startColumn: 1, endColumn: 2)]
+        )
+        let clone2 = CloneGroup(
+            type: .type2, tokenCount: 30, lineCount: 5, similarity: 85.0,
+            fragments: [CloneFragment(file: "B.swift", startLine: 1, endLine: 5, startColumn: 1, endColumn: 2)]
+        )
+        let result = AnalysisResult(
+            cloneGroups: [clone1, clone2],
+            filesAnalyzed: 2,
+            executionTime: 0.1,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("Clone 1"))
+        #expect(output.contains("Clone 2"))
+        #expect(!output.contains("Clone 0"))
+    }
+
     @Test("Given no clones with filtered clones, when reporting, then shows filtered count")
     func noClonesWithFilteredCount() {
         let result = AnalysisResult(
