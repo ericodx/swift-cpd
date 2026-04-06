@@ -24,6 +24,49 @@ struct TextReporterTests {
         #expect(output.contains("42 files"))
     }
 
+    @Test("Given no clones with zero filtered count, when reporting, then does not show filtered message")
+    func noClonesWithZeroFilteredCount() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 10,
+            executionTime: 0.3,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            filteredCloneCount: 0
+        )
+
+        let output = reporter.report(result)
+
+        #expect(!output.contains("filtered"))
+    }
+
+    @Test("Given clones, when reporting, then header line includes correct count and format")
+    func headerLineFormat() {
+        let clone = CloneGroup(
+            type: .type1,
+            tokenCount: 52,
+            lineCount: 8,
+            similarity: 100.0,
+            fragments: [
+                CloneFragment(file: "A.swift", startLine: 10, endLine: 17, startColumn: 1, endColumn: 2),
+                CloneFragment(file: "B.swift", startLine: 22, endLine: 29, startColumn: 1, endColumn: 2),
+            ]
+        )
+        let result = AnalysisResult(
+            cloneGroups: [clone],
+            filesAnalyzed: 3,
+            executionTime: 0.5,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("Found 1 clone(s) in 3 files"))
+    }
+
     @Test("Given no clones with filtered clones, when reporting, then shows filtered count")
     func noClonesWithFilteredCount() {
         let result = AnalysisResult(
@@ -69,6 +112,77 @@ struct TextReporterTests {
         #expect(output.contains("Clone 1 (Type-1, 52 tokens, 8 lines):"))
         #expect(output.contains("A.swift:10-17"))
         #expect(output.contains("B.swift:22-29"))
+    }
+
+    @Test("Given clone with fragments, when reporting, then each fragment appears on its own line")
+    func fragmentsAppearOnSeparateLines() {
+        let clone = CloneGroup(
+            type: .type1,
+            tokenCount: 52,
+            lineCount: 8,
+            similarity: 100.0,
+            fragments: [
+                CloneFragment(file: "A.swift", startLine: 10, endLine: 17, startColumn: 1, endColumn: 2),
+                CloneFragment(file: "B.swift", startLine: 22, endLine: 29, startColumn: 1, endColumn: 2),
+            ]
+        )
+        let result = AnalysisResult(
+            cloneGroups: [clone],
+            filesAnalyzed: 10,
+            executionTime: 0.85,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+        let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
+
+        let fragmentLines = lines.filter { $0.hasPrefix("  ") }
+        #expect(fragmentLines.count == 2)
+        #expect(fragmentLines[0].contains("A.swift:10-17"))
+        #expect(fragmentLines[1].contains("B.swift:22-29"))
+    }
+
+    @Test("Given two clone groups, when reporting, then blank line separates each clone block")
+    func blankLineSeparatesCloneBlocks() {
+        let clone1 = CloneGroup(
+            type: .type1,
+            tokenCount: 50,
+            lineCount: 10,
+            similarity: 100.0,
+            fragments: [
+                CloneFragment(file: "A.swift", startLine: 1, endLine: 10, startColumn: 1, endColumn: 2)
+            ]
+        )
+        let clone2 = CloneGroup(
+            type: .type2,
+            tokenCount: 30,
+            lineCount: 5,
+            similarity: 85.0,
+            fragments: [
+                CloneFragment(file: "B.swift", startLine: 1, endLine: 5, startColumn: 1, endColumn: 2)
+            ]
+        )
+        let result = AnalysisResult(
+            cloneGroups: [clone1, clone2],
+            filesAnalyzed: 5,
+            executionTime: 0.1,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+        let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
+
+        #expect(lines.count >= 6)
+
+        let headerIndex = lines.firstIndex { $0.starts(with: "Found") }
+        #expect(headerIndex != nil)
+
+        let emptyLineIndices = lines.enumerated().filter { $0.element.isEmpty }.map(\.offset)
+        #expect(emptyLineIndices.count >= 2)
     }
 
     @Test("Given multiple clone groups, when reporting, then sorts by type and numbers them")
