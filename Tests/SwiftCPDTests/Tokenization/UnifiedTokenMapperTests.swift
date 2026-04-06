@@ -433,6 +433,70 @@ struct UnifiedTokenMapperTests {
         #expect(!result.contains { $0.text == "$CALL" || $0.text == "$ACCESS" })
     }
 
+    @Test("Given function call, when mapping, then $CALL token has identifier kind and preserves location")
+    func functionCallTokenKindAndLocation() {
+        let loc = SourceLocation(file: "Call.swift", line: 7, column: 3)
+        let tokens = [
+            Token(kind: .identifier, text: "execute", location: loc),
+            Token(kind: .punctuation, text: "(", location: location),
+        ]
+
+        let result = mapper.map(tokens)
+
+        #expect(result[0].kind == .identifier)
+        #expect(result[0].text == "$CALL")
+        #expect(result[0].location == loc)
+        #expect(result[1].text == "(")
+    }
+
+    @Test("Given property access at end of tokens, when mapping, then isFollowedByParen is false and produces $ACCESS")
+    func propertyAccessAtEndOfTokens() {
+        let tokens = [
+            Token(kind: .identifier, text: "user", location: location),
+            Token(kind: .punctuation, text: ".", location: location),
+            Token(kind: .identifier, text: "age", location: location),
+        ]
+
+        let result = mapper.map(tokens)
+
+        #expect(result.count == 1)
+        #expect(result[0].text == "$ACCESS")
+        #expect(result[0].kind == .identifier)
+    }
+
+    @Test("Given property access followed by paren, when mapping, then returns original tokens instead of $ACCESS")
+    func propertyAccessFollowedByParenSkipsAccess() {
+        let tokens = [
+            Token(kind: .identifier, text: "obj", location: location),
+            Token(kind: .punctuation, text: ".", location: location),
+            Token(kind: .identifier, text: "run", location: location),
+            Token(kind: .punctuation, text: "(", location: location),
+        ]
+
+        let result = mapper.map(tokens)
+
+        #expect(!result.contains { $0.text == "$ACCESS" })
+        #expect(result.contains { $0.text == "$CALL" })
+    }
+
+    @Test("Given property access followed by non-paren token, when mapping, then produces $ACCESS")
+    func propertyAccessFollowedByNonParen() {
+        let loc = SourceLocation(file: "Access.swift", line: 5, column: 1)
+        let tokens = [
+            Token(kind: .identifier, text: "config", location: loc),
+            Token(kind: .punctuation, text: ".", location: location),
+            Token(kind: .identifier, text: "timeout", location: location),
+            Token(kind: .punctuation, text: ";", location: location),
+        ]
+
+        let result = mapper.map(tokens)
+
+        #expect(result[0].kind == .identifier)
+        #expect(result[0].text == "$ACCESS")
+        #expect(result[0].location == loc)
+        #expect(result[1].text == ";")
+    }
+
     @Test("Given identifier as sole token, when mapping, then tryFunctionCall boundary guard is not violated")
     func singleIdentifierNotFunctionCall() {
         let tokens = [Token(kind: .identifier, text: "standalone", location: location)]
