@@ -221,4 +221,166 @@ struct CloneDetectorTests {
 
         #expect(results.isEmpty)
     }
+
+    @Test("Given file with exactly minimumTokenCount tokens, when detecting, then processes the file")
+    func exactlyMinimumTokenCountIsProcessed() {
+        let specs: [(TokenKind, String)] = [
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+        ]
+
+        let tokensA = makeTokens(specs, file: "A.swift")
+        let tokensB = makeTokens(specs, file: "B.swift")
+
+        let files = [
+            FileTokens(file: "A.swift", source: "", tokens: tokensA, normalizedTokens: tokensA),
+            FileTokens(file: "B.swift", source: "", tokens: tokensB, normalizedTokens: tokensB),
+        ]
+
+        let detector = CloneDetector(minimumTokenCount: 3, minimumLineCount: 1)
+        let results = detector.detect(files: files)
+
+        #expect(!results.isEmpty)
+    }
+
+    @Test("Given hash with single location, when filtering candidates, then excludes it")
+    func singleLocationHashProducesNoCandidates() {
+        let specsA: [(TokenKind, String)] = [
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+        ]
+
+        let specsB: [(TokenKind, String)] = [
+            (.keyword, "func"), (.identifier, "run"), (.punctuation, "("),
+        ]
+
+        let tokensA = makeTokens(specsA, file: "A.swift")
+        let tokensB = makeTokens(specsB, file: "B.swift")
+
+        let files = [
+            FileTokens(file: "A.swift", source: "", tokens: tokensA, normalizedTokens: tokensA),
+            FileTokens(file: "B.swift", source: "", tokens: tokensB, normalizedTokens: tokensB),
+        ]
+
+        let detector = CloneDetector(minimumTokenCount: 3, minimumLineCount: 1)
+        let results = detector.detect(files: files)
+
+        #expect(results.isEmpty)
+    }
+
+    @Test("Given clones with lineCount exactly equal to minimumLineCount, when filtering, then includes them")
+    func lineCountExactlyAtMinimumIsIncluded() {
+        let specs: [(TokenKind, String)] = [
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+            (.integerLiteral, "1"), (.keyword, "var"),
+        ]
+
+        let tokensA = specs.enumerated().map { index, spec in
+            Token(
+                kind: spec.0,
+                text: spec.1,
+                location: SourceLocation(file: "A.swift", line: 1 + index, column: 1)
+            )
+        }
+
+        let tokensB = specs.enumerated().map { index, spec in
+            Token(
+                kind: spec.0,
+                text: spec.1,
+                location: SourceLocation(file: "B.swift", line: 1 + index, column: 1)
+            )
+        }
+
+        let files = [
+            FileTokens(file: "A.swift", source: "", tokens: tokensA, normalizedTokens: tokensA),
+            FileTokens(file: "B.swift", source: "", tokens: tokensB, normalizedTokens: tokensB),
+        ]
+
+        let detector = CloneDetector(minimumTokenCount: 5, minimumLineCount: 5)
+        let results = detector.detect(files: files)
+
+        #expect(!results.isEmpty)
+        #expect(results[0].lineCount == 5)
+    }
+
+    @Test(
+        "Given same-file tokens with distance equal to minimumTokenCount, when checking overlap, then not overlapping"
+    )
+    func distanceEqualToMinimumTokenCountIsNotOverlapping() {
+        let unit: [(TokenKind, String)] = [
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+        ]
+
+        let specs =
+            unit + [
+                (.keyword, "func"), (.identifier, "run"), (.punctuation, "("),
+            ] + unit
+
+        let tokensA = specs.enumerated().map { index, spec in
+            Token(
+                kind: spec.0,
+                text: spec.1,
+                location: SourceLocation(file: "A.swift", line: 1 + index, column: 1)
+            )
+        }
+
+        let files = [
+            FileTokens(file: "A.swift", source: "", tokens: tokensA, normalizedTokens: tokensA)
+        ]
+
+        let detector = CloneDetector(minimumTokenCount: 3, minimumLineCount: 1)
+        let results = detector.detect(files: files)
+
+        #expect(!results.isEmpty)
+    }
+
+    @Test("Given same-file tokens with distance less than minimumTokenCount, when checking overlap, then overlapping")
+    func distanceLessThanMinimumTokenCountIsOverlapping() {
+        let specs: [(TokenKind, String)] = [
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+        ]
+
+        let tokensA = specs.enumerated().map { index, spec in
+            Token(
+                kind: spec.0,
+                text: spec.1,
+                location: SourceLocation(file: "A.swift", line: 1 + index, column: 1)
+            )
+        }
+
+        let files = [
+            FileTokens(file: "A.swift", source: "", tokens: tokensA, normalizedTokens: tokensA)
+        ]
+
+        let detector = CloneDetector(minimumTokenCount: 5, minimumLineCount: 1)
+        let results = detector.detect(files: files)
+
+        #expect(results.isEmpty)
+    }
+
+    @Test("Given tokens that match at end boundary, when expanding, then expands to end of tokens")
+    func expansionReachesEndOfTokens() {
+        let sharedSpecs: [(TokenKind, String)] = [
+            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
+        ]
+
+        let extraToken: [(TokenKind, String)] = [(.integerLiteral, "42")]
+
+        let specsA = sharedSpecs + extraToken
+        let specsB = sharedSpecs + extraToken
+
+        let tokensA = makeTokens(specsA, file: "A.swift")
+        let tokensB = makeTokens(specsB, file: "B.swift")
+
+        let files = [
+            FileTokens(file: "A.swift", source: "", tokens: tokensA, normalizedTokens: tokensA),
+            FileTokens(file: "B.swift", source: "", tokens: tokensB, normalizedTokens: tokensB),
+        ]
+
+        let detector = CloneDetector(minimumTokenCount: 3, minimumLineCount: 1)
+        let results = detector.detect(files: files)
+
+        #expect(!results.isEmpty)
+        #expect(results[0].tokenCount == 4)
+    }
+
 }
