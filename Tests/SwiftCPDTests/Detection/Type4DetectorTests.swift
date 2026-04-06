@@ -311,6 +311,93 @@ struct Type4DetectorTests {
         #expect(result.first?.type == .type4)
     }
 
+    @Test("Given one function with control flow and one without, when detecting, then pre-filter still considers them")
+    func oneWithControlFlowOneWithout() {
+        let sourceA = """
+            func withFlow(_ items: [Int]) -> Int {
+                guard !items.isEmpty else { return 0 }
+                var total = 0
+                for item in items {
+                    if item > 0 {
+                        total += item
+                    }
+                }
+                return total
+            }
+            """
+
+        let sourceB = """
+            func withoutFlow(_ value: Int) {
+                let step1 = value * 2
+                let step2 = step1 + 10
+                let step3 = step2 - 5
+                let step4 = step3 * 3
+                let step5 = step4 / 2
+                let step6 = step5 + 7
+                print(step6)
+            }
+            """
+
+        let fileA = makeFileTokens(source: sourceA, file: "A.swift")
+        let fileB = makeFileTokens(source: sourceB, file: "B.swift")
+
+        let detector = Type4Detector(
+            semanticSimilarityThreshold: 10.0,
+            minimumTokenCount: 5,
+            minimumLineCount: 3
+        )
+
+        let result = detector.detect(files: [fileA, fileB])
+
+        #expect(result.allSatisfy { $0.type == .type4 })
+    }
+
+    @Test("Given Type-4 clone exactly at threshold, when detecting, then includes it")
+    func cloneAtExactThreshold() {
+        let sourceA = """
+            func sumA(_ items: [Int]) -> Int {
+                guard !items.isEmpty else { return 0 }
+                var total = 0
+                for item in items {
+                    total += item
+                }
+                return total
+            }
+            """
+
+        let sourceB = """
+            func sumB(_ values: [Int]) -> Int {
+                guard !values.isEmpty else { return 0 }
+                var result = 0
+                for value in values {
+                    result += value
+                }
+                return result
+            }
+            """
+
+        let fileA = makeFileTokens(source: sourceA, file: "A.swift")
+        let fileB = makeFileTokens(source: sourceB, file: "B.swift")
+
+        let detector = Type4Detector(
+            semanticSimilarityThreshold: 99.0,
+            minimumTokenCount: 5,
+            minimumLineCount: 3
+        )
+
+        let resultHigh = detector.detect(files: [fileA, fileB])
+
+        let detectorLow = Type4Detector(
+            semanticSimilarityThreshold: 50.0,
+            minimumTokenCount: 5,
+            minimumLineCount: 3
+        )
+
+        let resultLow = detectorLow.detect(files: [fileA, fileB])
+
+        #expect(resultLow.count >= resultHigh.count)
+    }
+
     @Test("Given functions with no control flow, when detecting, then passes pre-filter")
     func noControlFlowPassesPreFilter() {
         let sourceA = """
