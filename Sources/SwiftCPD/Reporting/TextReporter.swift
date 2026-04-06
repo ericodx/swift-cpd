@@ -7,7 +7,13 @@ struct TextReporter: Reporter {
         guard
             !clones.isEmpty
         else {
-            return "No clones detected in \(result.filesAnalyzed) files (\(timeFormatted)s)"
+            var message = "No clones detected in \(result.filesAnalyzed) files (\(timeFormatted)s)"
+
+            if result.filteredCloneCount > 0 {
+                message += " (\(result.filteredCloneCount) clone(s) filtered by configuration)"
+            }
+
+            return message
         }
 
         var lines: [String] = []

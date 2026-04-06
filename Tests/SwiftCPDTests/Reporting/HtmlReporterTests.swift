@@ -76,4 +76,22 @@ struct HtmlReporterTests {
         #expect(output.contains("No clones detected"))
         #expect(output.contains("0 clone(s)"))
     }
+
+    @Test("Given no clones with filtered clones, when reporting, then shows filtered count")
+    func noClonesWithFilteredCount() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 5,
+            executionTime: 0.1,
+            totalTokens: 500,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            filteredCloneCount: 3
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("No clones detected"))
+        #expect(output.contains("3 clone(s) filtered by configuration"))
+    }
 }

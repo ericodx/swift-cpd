@@ -129,7 +129,10 @@ struct SwiftCPDIntegrationTests {
 
     @Test("Given no paths, when running, then exits with error")
     func noPaths() throws {
-        let result = try runSwiftCPD([])
+        let tempDir = createTempDirectory(prefix: "SwiftCPDIntegration")
+        defer { removeTempDirectory(tempDir) }
+
+        let result = try runSwiftCPD([], workingDirectory: tempDir)
 
         #expect(result.exitCode == 2)
     }

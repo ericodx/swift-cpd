@@ -289,6 +289,17 @@ struct CTokenizerTests {
         #expect(!atTokens.isEmpty)
     }
 
+    @Test("Given unrecognized character, when tokenizing, then skips it and continues")
+    func unrecognizedCharacterSkipped() {
+        let source = "int ` x"
+        let tokens = tokenizer.tokenize(source: source, file: "test.m")
+
+        let texts = tokens.map(\.text)
+        #expect(texts.contains("int"))
+        #expect(texts.contains("x"))
+        #expect(!texts.contains("`"))
+    }
+
     @Test("Given source with only block comment as slash, when tokenizing, then handles division vs comment")
     func slashNotFollowedByCommentMarker() {
         let source = "int x = 10 / 2;"

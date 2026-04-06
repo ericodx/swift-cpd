@@ -1,4 +1,5 @@
 # Local Files
 .swift-cpd-cache/
+.swift-mutation-testing-cache/
 USP/
 Makefile
