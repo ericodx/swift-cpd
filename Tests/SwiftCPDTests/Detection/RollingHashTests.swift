@@ -67,6 +67,44 @@ struct RollingHashTests {
         #expect(rolledHash == recomputedHash)
     }
 
+    @Test("Given rolling update where hash equals removeValue, when updating, then result is correct")
+    func rollingUpdateWhenHashEqualsRemoveValue() {
+        let tokens = makeSimpleTokens(["a", "b", "c", "d"])
+        let windowSize = 2
+        let highestPower = rollingHash.power(for: windowSize)
+
+        let initialHash = rollingHash.hash(tokens, offset: 0, count: windowSize)
+        let rolledHash = rollingHash.rollingUpdate(
+            hash: initialHash,
+            removing: tokens[0],
+            adding: tokens[2],
+            highestPower: highestPower
+        )
+        let expected = rollingHash.hash(tokens, offset: 1, count: windowSize)
+
+        #expect(rolledHash == expected)
+    }
+
+    @Test("Given rolling update where removeValue exceeds hash, when updating, then wraps around modulus correctly")
+    func rollingUpdateModulusWrapAround() {
+        let tokens = makeSimpleTokens(["zzz", "aaa", "bbb", "ccc", "ddd", "eee"])
+        let windowSize = 4
+        let highestPower = rollingHash.power(for: windowSize)
+
+        var currentHash = rollingHash.hash(tokens, offset: 0, count: windowSize)
+
+        for offset in 1 ... (tokens.count - windowSize) {
+            currentHash = rollingHash.rollingUpdate(
+                hash: currentHash,
+                removing: tokens[offset - 1],
+                adding: tokens[offset + windowSize - 1],
+                highestPower: highestPower
+            )
+            let expected = rollingHash.hash(tokens, offset: offset, count: windowSize)
+            #expect(currentHash == expected)
+        }
+    }
+
     @Test("Given multiple rolling updates, when chaining, then each matches full recomputation")
     func multipleRollingUpdates() {
         let tokens = [
