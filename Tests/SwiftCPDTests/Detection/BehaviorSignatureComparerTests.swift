@@ -117,6 +117,48 @@ struct BehaviorSignatureComparerTests {
         #expect(abs(result - 1.0) < 0.001)
     }
 
+    @Test(
+        "Given one empty and one non-empty calledFunctions set, when comparing, then calledFunctions contribution is 0"
+    )
+    func oneEmptyCalledFunctions() {
+        let signatureA = BehaviorSignature(
+            controlFlowShape: [.forLoop],
+            dataFlowPatterns: [.defineAndUse],
+            calledFunctions: ["map"],
+            typeSignatures: ["Int"]
+        )
+        let signatureB = BehaviorSignature(
+            controlFlowShape: [.forLoop],
+            dataFlowPatterns: [.defineAndUse],
+            calledFunctions: [],
+            typeSignatures: ["Int"]
+        )
+
+        let result = comparer.similarity(between: signatureA, and: signatureB)
+
+        #expect(abs(result - 0.8) < 0.001)
+    }
+
+    @Test("Given one empty and one non-empty typeSignatures set, when comparing, then types contribution is 0")
+    func oneEmptyTypeSignatures() {
+        let signatureA = BehaviorSignature(
+            controlFlowShape: [.forLoop],
+            dataFlowPatterns: [.defineAndUse],
+            calledFunctions: ["map"],
+            typeSignatures: ["Int"]
+        )
+        let signatureB = BehaviorSignature(
+            controlFlowShape: [.forLoop],
+            dataFlowPatterns: [.defineAndUse],
+            calledFunctions: ["map"],
+            typeSignatures: []
+        )
+
+        let result = comparer.similarity(between: signatureA, and: signatureB)
+
+        #expect(abs(result - 0.9) < 0.001)
+    }
+
     @Test("Given partially overlapping signatures, when comparing, then similarity is between 0 and 1")
     func partialOverlap() {
         let signatureA = BehaviorSignature(
