@@ -22,7 +22,7 @@ struct HtmlReporter: Reporter {
                     <p>\(clones.count) clone(s) found \
             in \(result.filesAnalyzed) files (\(timeFormatted)s)</p>
                 </div>
-            \(clones.isEmpty ? renderNoClones() : renderClones(clones))
+            \(clones.isEmpty ? renderNoClones(filteredCloneCount: result.filteredCloneCount) : renderClones(clones))
             </body>
             </html>
             """
@@ -93,10 +93,17 @@ extension HtmlReporter {
         """
     }
 
-    private func renderNoClones() -> String {
-        """
-            <div class="no-clones">No clones detected.</div>
-        """
+    private func renderNoClones(filteredCloneCount: Int) -> String {
+        if filteredCloneCount > 0 {
+            return """
+                    <div class="no-clones">No clones detected. \
+                (\(filteredCloneCount) clone(s) filtered by configuration)</div>
+                """
+        }
+
+        return """
+                <div class="no-clones">No clones detected.</div>
+            """
     }
 
     private func renderClones(_ clones: [CloneGroup]) -> String {
