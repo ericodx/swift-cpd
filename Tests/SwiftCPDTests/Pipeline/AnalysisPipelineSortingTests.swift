@@ -6,28 +6,11 @@ import Testing
 @Suite("AnalysisPipeline Sorting")
 struct AnalysisPipelineSortingTests {
 
-    private let duplicateSource = """
-        func calculate() -> Int {
-            let value = 42
-            let result = value * 2
-            let adjusted = result + 10
-            let final = adjusted - 5
-            return final
-        }
-        """
-
-    private func makeTempDir(_ label: String) throws -> (URL, String) {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pipeline_\(label)_\(UUID().uuidString)")
-        let cacheDir = tempDir.appendingPathComponent(".swift-cpd-cache").path
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        return (tempDir, cacheDir)
-    }
-
     @Test("Given same type and file, when sorting, then orders by startLine")
     func sortingByStartLine() async throws {
-        let (tempDir, cacheDir) = try makeTempDir("startline")
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let tempDir = createTempDirectory(prefix: "pipeline_startline")
+        let cacheDir = tempDir + "/.swift-cpd-cache"
+        defer { removeTempDirectory(tempDir) }
 
         let twoFunctions = """
             func first() -> Int {
@@ -47,10 +30,10 @@ struct AnalysisPipelineSortingTests {
             }
             """
 
-        let fileA = tempDir.appendingPathComponent("Same.swift").path
-        let fileB = tempDir.appendingPathComponent("Other.swift").path
+        let fileA = tempDir + "/Same.swift"
+        let fileB = tempDir + "/Other.swift"
         try twoFunctions.write(toFile: fileA, atomically: true, encoding: .utf8)
-        try duplicateSource.write(toFile: fileB, atomically: true, encoding: .utf8)
+        try standardDuplicateSource.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
@@ -77,14 +60,15 @@ struct AnalysisPipelineSortingTests {
 
     @Test("Given same type but different files, when sorting, then orders by file")
     func sortingByFile() async throws {
-        let (tempDir, cacheDir) = try makeTempDir("filesort")
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let tempDir = createTempDirectory(prefix: "pipeline_filesort")
+        let cacheDir = tempDir + "/.swift-cpd-cache"
+        defer { removeTempDirectory(tempDir) }
 
-        let fileA = tempDir.appendingPathComponent("A.swift").path
-        let fileB = tempDir.appendingPathComponent("B.swift").path
-        let fileC = tempDir.appendingPathComponent("C.swift").path
+        let fileA = tempDir + "/A.swift"
+        let fileB = tempDir + "/B.swift"
+        let fileC = tempDir + "/C.swift"
         for path in [fileA, fileB, fileC] {
-            try duplicateSource.write(toFile: path, atomically: true, encoding: .utf8)
+            try standardDuplicateSource.write(toFile: path, atomically: true, encoding: .utf8)
         }
 
         let pipeline = AnalysisPipeline(
@@ -110,13 +94,14 @@ struct AnalysisPipelineSortingTests {
 
     @Test("Given equal types, when sorting, then falls through to file comparison")
     func sortingTypeEqualityFallsThrough() async throws {
-        let (tempDir, cacheDir) = try makeTempDir("typeeq")
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let tempDir = createTempDirectory(prefix: "pipeline_typeeq")
+        let cacheDir = tempDir + "/.swift-cpd-cache"
+        defer { removeTempDirectory(tempDir) }
 
-        let fileA = tempDir.appendingPathComponent("A.swift").path
-        let fileB = tempDir.appendingPathComponent("B.swift").path
-        try duplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
-        try duplicateSource.write(toFile: fileB, atomically: true, encoding: .utf8)
+        let fileA = tempDir + "/A.swift"
+        let fileB = tempDir + "/B.swift"
+        try standardDuplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
+        try standardDuplicateSource.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
@@ -146,11 +131,12 @@ struct AnalysisPipelineSortingTests {
 
     @Test("Given .swift file, when tokenizing, then uses SwiftTokenizer")
     func swiftFileUsesSwiftTokenizer() async throws {
-        let (tempDir, cacheDir) = try makeTempDir("swifttok")
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let tempDir = createTempDirectory(prefix: "pipeline_swifttok")
+        let cacheDir = tempDir + "/.swift-cpd-cache"
+        defer { removeTempDirectory(tempDir) }
 
-        let fileA = tempDir.appendingPathComponent("A.swift").path
-        try duplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
+        let fileA = tempDir + "/A.swift"
+        try standardDuplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1, cacheDirectory: cacheDir
@@ -162,8 +148,9 @@ struct AnalysisPipelineSortingTests {
 
     @Test("Given .m file, when tokenizing, then uses CTokenizer")
     func mFileUsesCTokenizer() async throws {
-        let (tempDir, cacheDir) = try makeTempDir("ctok")
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let tempDir = createTempDirectory(prefix: "pipeline_ctok")
+        let cacheDir = tempDir + "/.swift-cpd-cache"
+        defer { removeTempDirectory(tempDir) }
 
         let source = """
             int main() {
@@ -172,7 +159,7 @@ struct AnalysisPipelineSortingTests {
             }
             """
 
-        let fileA = tempDir.appendingPathComponent("A.m").path
+        let fileA = tempDir + "/A.m"
         try source.write(toFile: fileA, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(

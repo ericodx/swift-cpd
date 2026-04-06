@@ -51,7 +51,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 1, endLine: 5, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [type2Clone, type1Clone])
+        let result = makeAnalysisResult(cloneGroups: [type2Clone, type1Clone])
 
         let sorted = result.sortedCloneGroups
 
@@ -77,7 +77,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 1, endLine: 8, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [smallClone, largeClone])
+        let result = makeAnalysisResult(cloneGroups: [smallClone, largeClone])
 
         let sorted = result.sortedCloneGroups
 
@@ -103,7 +103,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 1, endLine: 5, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [cloneFileZ, cloneA])
+        let result = makeAnalysisResult(cloneGroups: [cloneFileZ, cloneA])
 
         let sorted = result.sortedCloneGroups
 
@@ -129,7 +129,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 10, endLine: 15, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [cloneLate, cloneEarly])
+        let result = makeAnalysisResult(cloneGroups: [cloneLate, cloneEarly])
 
         let sorted = result.sortedCloneGroups
 
@@ -153,7 +153,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 1, endLine: 3, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [cloneA, cloneB])
+        let result = makeAnalysisResult(cloneGroups: [cloneA, cloneB])
 
         let sorted = result.sortedCloneGroups
 
@@ -179,7 +179,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 1, endLine: 5, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [cloneFileZ, cloneA])
+        let result = makeAnalysisResult(cloneGroups: [cloneFileZ, cloneA])
 
         let sorted = result.sortedCloneGroups
 
@@ -203,7 +203,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "same.swift", startLine: 10, endLine: 15, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [cloneLate, cloneEarly])
+        let result = makeAnalysisResult(cloneGroups: [cloneLate, cloneEarly])
 
         let sorted = result.sortedCloneGroups
 
@@ -229,7 +229,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: []
         )
-        let result = makeResult(cloneGroups: [withoutFragments, withFragments])
+        let result = makeAnalysisResult(cloneGroups: [withoutFragments, withFragments])
 
         let sorted = result.sortedCloneGroups
 
@@ -253,7 +253,7 @@ struct AnalysisResultTests {
             similarity: 90.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 10, endLine: 15, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [cloneA, cloneB])
+        let result = makeAnalysisResult(cloneGroups: [cloneA, cloneB])
 
         let sorted = result.sortedCloneGroups
 
@@ -291,7 +291,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 1, endLine: 5, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [type4, type2, type3, type1])
+        let result = makeAnalysisResult(cloneGroups: [type4, type2, type3, type1])
 
         let sorted = result.sortedCloneGroups
 
@@ -338,7 +338,7 @@ struct AnalysisResultTests {
             similarity: 100.0,
             fragments: [CloneFragment(file: "a.swift", startLine: 50, endLine: 56, startColumn: 1, endColumn: 10)]
         )
-        let result = makeResult(cloneGroups: [groupA, groupB, groupC, cloneGroupD, cloneGroupE])
+        let result = makeAnalysisResult(cloneGroups: [groupA, groupB, groupC, cloneGroupD, cloneGroupE])
 
         let sorted = result.sortedCloneGroups
 
@@ -349,14 +349,4 @@ struct AnalysisResultTests {
         #expect(sorted[4] == groupA)
     }
 
-    private func makeResult(cloneGroups: [CloneGroup]) -> AnalysisResult {
-        AnalysisResult(
-            cloneGroups: cloneGroups,
-            filesAnalyzed: 1,
-            executionTime: 0.1,
-            totalTokens: 100,
-            minimumTokenCount: 10,
-            minimumLineCount: 1
-        )
-    }
 }
