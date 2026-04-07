@@ -5,6 +5,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/ericodx/swift-cpd/main-analysis.yml?branch=main&style=flat-square&logo=github&logoColor=white&label=CI&color=4CAF50)](https://github.com/ericodx/swift-cpd/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=deploy-on-friday-swift-cpd&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=deploy-on-friday-swift-cpd)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=deploy-on-friday-swift-cpd&metric=coverage)](https://sonarcloud.io/summary/new_code?id=deploy-on-friday-swift-cpd)
+![mutation score](https://img.shields.io/badge/mutation%20score-91.4%25-lightgray?logo=jest&logoColor=white)
 
 **Detect and eliminate duplicated logic in Swift and Objective-C/C codebases to improve maintainability and code quality.**
 

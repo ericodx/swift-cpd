@@ -201,10 +201,6 @@ struct CloneDetectorDeduplicationTests {
         "Given bidirectional subsumption check, when smaller pair comes first, then still deduplicated"
     )
     func bidirectionalSubsumptionDeduplicates() {
-        let smallSpecs: [(TokenKind, String)] = [
-            (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
-        ]
-
         let largeSpecs: [(TokenKind, String)] = [
             (.keyword, "let"), (.identifier, "x"), (.operatorToken, "="),
             (.integerLiteral, "1"), (.keyword, "var"), (.identifier, "y"),

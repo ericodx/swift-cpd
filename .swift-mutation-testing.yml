@@ -5,7 +5,7 @@
 test-target: SwiftCPDTests
 
 # Per-mutant test timeout in seconds (default: 30 for SPM)
-timeout: 45
+timeout: 30
 
 # Disable result cache (re-runs all mutants on every execution)
 # no-cache: true
