@@ -357,6 +357,50 @@ struct CloneDetectorTests {
         #expect(results.isEmpty)
     }
 
+    @Test(
+        "Given static let declarations with different types, when detecting, then returns no Type-2 clones"
+    )
+    func noFalsePositivesForDifferentTypes() {
+        let sourceA = """
+            public enum DSColors {
+                public enum Black {
+                    public static let solid = Color(r: 0, g: 0, b: 0)
+                    public static let opacity10 = Color(r: 0, g: 0, b: 0, a: 0.1)
+                    public static let opacity20 = Color(r: 0, g: 0, b: 0, a: 0.2)
+                    public static let opacity30 = Color(r: 0, g: 0, b: 0, a: 0.3)
+                    public static let opacity40 = Color(r: 0, g: 0, b: 0, a: 0.4)
+                    public static let opacity50 = Color(r: 0, g: 0, b: 0, a: 0.5)
+                }
+            }
+            """
+
+        let sourceB = """
+            public enum DSGrids {
+                public enum Desktop {
+                    public static let columns2 = GridToken(columns: 2, gutter: 32, margin: 0, totalWidth: 1280)
+                    public static let columns4 = GridToken(columns: 4, gutter: 32, margin: 0, totalWidth: 1280)
+                    public static let columns6 = GridToken(columns: 6, gutter: 32, margin: 0, totalWidth: 1280)
+                    public static let columns8 = GridToken(columns: 8, gutter: 32, margin: 0, totalWidth: 1280)
+                    public static let columns10 = GridToken(columns: 10, gutter: 32, margin: 0, totalWidth: 1280)
+                    public static let columns12 = GridToken(columns: 12, gutter: 32, margin: 0, totalWidth: 1280)
+                }
+            }
+            """
+
+        let fileA = makeFileTokens(source: sourceA, file: "DSColors.swift")
+        let fileB = makeFileTokens(source: sourceB, file: "DSGrids.swift")
+
+        let detector = CloneDetector(minimumTokenCount: 20, minimumLineCount: 3)
+        let results = detector.detect(files: [fileA, fileB])
+
+        let crossFileClones = results.filter { group in
+            let files = Set(group.fragments.map(\.file))
+            return files.count > 1
+        }
+
+        #expect(crossFileClones.isEmpty)
+    }
+
     @Test("Given tokens that match at end boundary, when expanding, then expands to end of tokens")
     func expansionReachesEndOfTokens() {
         let sharedSpecs: [(TokenKind, String)] = [

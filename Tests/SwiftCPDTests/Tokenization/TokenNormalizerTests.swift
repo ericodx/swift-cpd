@@ -20,15 +20,15 @@ struct TokenNormalizerTests {
         #expect(normalized[0].kind == .identifier)
     }
 
-    @Test("Given type name tokens, when normalizing, then replaces text with $TYPE")
-    func normalizesTypeNames() {
+    @Test("Given type name tokens, when normalizing, then preserves original text")
+    func preservesTypeNames() {
         let tokens = [
             Token(kind: .typeName, text: "String", location: location)
         ]
 
         let normalized = normalizer.normalize(tokens)
 
-        #expect(normalized[0].text == "$TYPE")
+        #expect(normalized[0].text == "String")
         #expect(normalized[0].kind == .typeName)
     }
 

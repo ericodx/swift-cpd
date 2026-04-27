@@ -80,8 +80,19 @@ extension SwiftTokenizer {
     }
 
     private func classifyIdentifier(_ syntaxToken: TokenSyntax) -> TokenKind {
-        if let parent = syntaxToken.parent,
-            parent.is(IdentifierTypeSyntax.self) || parent.is(MemberTypeSyntax.self)
+        guard
+            let parent = syntaxToken.parent
+        else {
+            return .identifier
+        }
+
+        if parent.is(IdentifierTypeSyntax.self) || parent.is(MemberTypeSyntax.self) {
+            return .typeName
+        }
+
+        if parent.is(DeclReferenceExprSyntax.self),
+            let grandparent = parent.parent,
+            grandparent.is(FunctionCallExprSyntax.self)
         {
             return .typeName
         }
