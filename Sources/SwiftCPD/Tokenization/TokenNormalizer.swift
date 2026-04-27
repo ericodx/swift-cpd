@@ -25,7 +25,7 @@ extension TokenNormalizer {
             return "$ID"
 
         case .typeName:
-            return "$TYPE"
+            return nil
 
         case .integerLiteral, .floatingLiteral:
             return "$NUM"
