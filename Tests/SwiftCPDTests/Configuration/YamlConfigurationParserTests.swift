@@ -257,6 +257,7 @@ struct YamlConfigurationParserTests {
             inlineSuppressionTag: swiftcpd:ignore
             ignoreSameFile: true
             ignoreStructural: true
+            noCache: true
             paths:
               - Sources/
             exclude: []
@@ -278,6 +279,7 @@ struct YamlConfigurationParserTests {
         #expect(config.inlineSuppressionTag == "swiftcpd:ignore")
         #expect(config.ignoreSameFile == true)
         #expect(config.ignoreStructural == true)
+        #expect(config.noCache == true)
         #expect(config.paths == ["Sources/"])
         #expect(config.exclude == [])
         #expect(config.enabledCloneTypes == [1, 2])

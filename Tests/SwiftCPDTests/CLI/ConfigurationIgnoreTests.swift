@@ -23,7 +23,8 @@ struct ConfigurationIgnoreTests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: true,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -50,7 +51,8 @@ struct ConfigurationIgnoreTests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: false,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -76,7 +78,8 @@ struct ConfigurationIgnoreTests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
-            ignoreStructural: true
+            ignoreStructural: true,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -103,7 +106,8 @@ struct ConfigurationIgnoreTests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
-            ignoreStructural: false
+            ignoreStructural: false,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -147,7 +151,8 @@ struct ConfigurationIgnoreTests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: [1, 2],
             ignoreSameFile: nil,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -174,7 +179,8 @@ struct ConfigurationIgnoreTests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: [1, 2],
             ignoreSameFile: nil,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
