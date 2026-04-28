@@ -32,7 +32,7 @@ enum TokenKind: String, Sendable, Equatable, Hashable, Codable
 |---|---|---|
 | `.keyword` | Both tokenizers | `func`, `var`, `let`, `if`, `return` |
 | `.identifier` | Both | variable and function names |
-| `.typeName` | `SwiftTokenizer` | names in type position (`Int`, `MyClass`) |
+| `.typeName` | `SwiftTokenizer` | names in type positions and function/constructor callees (`Int`, `Color(...)`) |
 | `.integerLiteral` | Both | `42`, `0xFF` |
 | `.floatingLiteral` | Both | `3.14` |
 | `.stringLiteral` | Both | `"hello"` |
@@ -40,7 +40,7 @@ enum TokenKind: String, Sendable, Equatable, Hashable, Codable
 | `.punctuation` | Both | `(`, `)`, `{`, `}`, `,`, `;`, `::` |
 | `.colonColon` | `SwiftTokenizer` | `::` C++ namespace qualifier (swift-syntax 603+) |
 
-`typeName` is distinct from `identifier` so that `TokenNormalizer` can produce the `$TYPE` placeholder only for names that appear in type-annotation positions, improving clone precision.
+`typeName` is distinct from `identifier` so that `TokenNormalizer` can preserve type and callee names while normalizing regular identifiers. This prevents false positives between structurally similar code that uses different types (e.g., `Color(r:g:b:)` vs `GridToken(columns:gutter:margin:)`).
 
 ### SourceLocation
 
@@ -67,7 +67,7 @@ func tokenize(source: String, file: String) -> [Token]
 
 Uses the **swift-syntax** `Parser` to produce a full `SourceFileSyntax` tree. Tokens are extracted by walking the tree; each `TokenSyntax` node is converted to a `Token` with its exact line and column.
 
-**Type promotion:** if a `TokenSyntax` node whose `parent` is `IdentifierTypeSyntax` or `MemberTypeSyntax`, the `kind` is set to `.typeName` instead of `.identifier`. For all other positions, `kind` defaults to `.identifier`.
+**Type promotion:** an `identifier` token is promoted to `.typeName` when its parent node is `IdentifierTypeSyntax`, `MemberTypeSyntax`, or when it is the callee of a `FunctionCallExprSyntax` (via `DeclReferenceExprSyntax`). This covers both type annotations (`let x: Int`) and constructor/function calls (`Color(r: 0)`). For all other positions, `kind` defaults to `.identifier`.
 
 ### CTokenizer
 
@@ -97,17 +97,17 @@ struct TokenNormalizer: Sendable
 func normalize(_ tokens: [Token]) -> [Token]
 ```
 
-Returns a new token list where names and literals are replaced with language-agnostic placeholders. Structure tokens (keywords, operators, punctuation) are unchanged.
+Returns a new token list where regular identifiers and literals are replaced with language-agnostic placeholders. Type names, callee names, keywords, operators, and punctuation are preserved as-is.
 
 | `TokenKind` | Replacement text |
 |---|---|
 | `.identifier` | `$ID` |
-| `.typeName` | `$TYPE` |
+| `.typeName` | *(preserved)* |
 | `.integerLiteral` | `$NUM` |
 | `.floatingLiteral` | `$NUM` |
 | `.stringLiteral` | `$STR` |
 
-After normalization, `var x = 5; print(x)` and `var y = 10; print(y)` produce identical token sequences, enabling Type 2 detection.
+After normalization, `var x = 5` and `var y = 10` produce identical token sequences (`var $ID = $NUM`), enabling Type 2 detection. However, `Color(r: 0)` and `GridToken(columns: 2)` remain distinct because callee names are preserved.
 
 ### UnifiedTokenMapper
 

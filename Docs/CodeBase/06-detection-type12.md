@@ -10,7 +10,7 @@
 struct CloneDetector: DetectionAlgorithm
 ```
 
-Detects exact (Type 1) and parameterized (Type 2) clones in a single pass over **normalized** tokens. Classification is deferred to the end, where raw tokens are compared to distinguish the two types.
+Detects exact (Type 1) and parameterized (Type 2) clones in a single pass over **normalized** tokens. Normalization replaces identifiers and literals with placeholders but preserves type and function callee names, so only code that uses the same types can match. Classification is deferred to the end, where raw tokens are compared to distinguish the two types.
 
 ```swift
 init(minimumTokenCount: Int = 50, minimumLineCount: Int = 5)
