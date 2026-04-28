@@ -19,6 +19,7 @@ init(
     minimumTokenCount: Int = 50,
     minimumLineCount: Int = 5,
     cacheDirectory: String = ".swift-cpd-cache",
+    noCache: Bool = false,
     crossLanguageEnabled: Bool = false,
     thresholds: DetectionThresholds = .defaults,
     inlineSuppressionTag: String = "swiftcpd:ignore",
@@ -38,7 +39,9 @@ The method is `async` because file loading is parallelized with Swift concurrenc
 
 ```mermaid
 flowchart TD
-    A["analyze(files:)"] --> B["FileCache.load(from:)"]
+    A["analyze(files:)"] --> NCC{noCache?}
+    NCC -- no --> B["FileCache.load(from:)"]
+    NCC -- yes --> C
     B --> C["async let per file"]
     C --> D["FileHasher.hash"]
     D --> E{Cache hit?}
