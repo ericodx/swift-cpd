@@ -196,6 +196,7 @@ extension SwiftCPD {
             minimumTokenCount: configuration.minimumTokenCount,
             minimumLineCount: configuration.minimumLineCount,
             cacheDirectory: configuration.cacheDirectory,
+            noCache: configuration.noCache,
             crossLanguageEnabled: configuration.crossLanguageEnabled,
             thresholds: DetectionThresholds(
                 type3Similarity: configuration.type3Similarity,
@@ -254,6 +255,7 @@ extension SwiftCPD {
               - 2
               - 3
               - 4
+            # noCache: true
             """
 
         do {

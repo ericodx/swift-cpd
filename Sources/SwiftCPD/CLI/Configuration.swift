@@ -19,6 +19,7 @@ struct Configuration: Sendable {
     let ignoreSameFile: Bool
     let ignoreStructural: Bool
     let cacheDirectory: String
+    let noCache: Bool
 }
 
 extension Configuration {
@@ -48,6 +49,7 @@ extension Configuration {
         self.ignoreSameFile = parsed.ignoreSameFile || yaml?.ignoreSameFile ?? false
         self.ignoreStructural = parsed.ignoreStructural || yaml?.ignoreStructural ?? false
         self.cacheDirectory = parsed.cacheDirectory ?? ".swift-cpd-cache"
+        self.noCache = parsed.noCache || yaml?.noCache ?? false
 
         let yamlTypes = yaml?.enabledCloneTypes.map { Set($0.compactMap { CloneType(rawValue: $0) }) }
         self.enabledCloneTypes = parsed.enabledCloneTypes ?? yamlTypes ?? Set(CloneType.allCases)

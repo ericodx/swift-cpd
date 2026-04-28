@@ -283,6 +283,20 @@ struct ArgumentParserTests {
         #expect(result.ignoreStructural == false)
     }
 
+    @Test("Given --no-cache flag, when parsing, then noCache is true")
+    func noCacheFlag() throws {
+        let result = try parser.parse(["swift-cpd", "--no-cache", "Sources/"])
+
+        #expect(result.noCache == true)
+    }
+
+    @Test("Given no --no-cache flag, when parsing, then noCache defaults to false")
+    func noCacheDefaultFalse() throws {
+        let result = try parser.parse(["swift-cpd", "Sources/"])
+
+        #expect(result.noCache == false)
+    }
+
     @Test("Given --exclude with pattern, when parsing, then captures exclude pattern")
     func excludeFlag() throws {
         let result = try parser.parse(["swift-cpd", "--exclude", "*.generated.swift", "Sources/"])

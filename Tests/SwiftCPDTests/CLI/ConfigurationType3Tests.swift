@@ -23,7 +23,8 @@ struct ConfigurationType3Tests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -50,7 +51,8 @@ struct ConfigurationType3Tests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -76,7 +78,8 @@ struct ConfigurationType3Tests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -102,7 +105,8 @@ struct ConfigurationType3Tests {
             inlineSuppressionTag: nil,
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
-            ignoreStructural: nil
+            ignoreStructural: nil,
+            noCache: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)

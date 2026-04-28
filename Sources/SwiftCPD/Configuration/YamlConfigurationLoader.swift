@@ -30,7 +30,8 @@ struct YamlConfigurationLoader: Sendable {
                 inlineSuppressionTag: nil,
                 enabledCloneTypes: nil,
                 ignoreSameFile: nil,
-                ignoreStructural: nil
+                ignoreStructural: nil,
+                noCache: nil
             )
         }
 

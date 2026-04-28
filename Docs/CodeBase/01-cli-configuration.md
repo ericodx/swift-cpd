@@ -58,6 +58,7 @@ All numeric arguments are parsed and range-validated here. Boolean flags default
 | `--cross-language` | flag | Include C-family files |
 | `--ignore-same-file` | flag | Skip same-file clones |
 | `--ignore-structural` | flag | Skip Type 3/4 clones |
+| `--no-cache` | flag | Disable tokenization cache |
 | `--cache-dir <path>` | `String` | Cache directory |
 | `--version` | flag | Print version and exit |
 | `--help` | flag | Print help and exit |
@@ -98,6 +99,7 @@ var excludePatterns: [String]
 var inlineSuppressionTag: String?
 var enabledCloneTypes: Set<CloneType>?
 var cacheDirectory: String?
+var noCache: Bool
 ```
 
 ---
@@ -138,6 +140,7 @@ Throws `ConfigurationError` when `paths` is empty after merging.
 | `enabledCloneTypes` | `Set<CloneType>` | all four types |
 | `ignoreSameFile` | `Bool` | `true` |
 | `ignoreStructural` | `Bool` | `true` |
+| `noCache` | `Bool` | `false` |
 | `cacheDirectory` | `String` | `.swift-cpd-cache` |
 
 ---

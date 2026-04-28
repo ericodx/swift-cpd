@@ -34,6 +34,7 @@ flowchart TD
 | `inlineSuppressionTag` | `swiftcpd:ignore` | Comment tag to suppress a region |
 | `maxDuplication` | _(none)_ | Fail if duplication % exceeds this |
 | `baselineFilePath` | `.swift-cpd-baseline.json` | Baseline file location |
+| `noCache` | `false` | Disable tokenization cache |
 | `cacheDirectory` | `.swift-cpd-cache` | Token cache directory |
 
 ### `init` Command — Source Path Discovery
@@ -78,7 +79,9 @@ CacheEntry
 └── normalizedTokens — normalized Token list
 ```
 
-The cache is stored at `.swift-cpd-cache/cache.json` (configurable). I/O operations are offloaded to a `Task.detached` to avoid blocking the actor while the caller awaits the result.
+The cache is stored at `.swift-cpd-cache/cache.json` (configurable via `--cache-dir`). I/O operations are offloaded to a `Task.detached` to avoid blocking the actor while the caller awaits the result.
+
+Caching can be disabled entirely with `--no-cache` or `noCache: true` in the YAML file. When disabled, files are re-tokenized on every run and no cache is read or written.
 
 ---
 

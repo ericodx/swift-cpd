@@ -97,7 +97,8 @@ struct YamlConfigurationParser: Sendable {
             inlineSuppressionTag: scalars["inlineSuppressionTag"],
             enabledCloneTypes: try intArray(for: "enabledCloneTypes", in: arrays),
             ignoreSameFile: try boolValue(for: "ignoreSameFile", in: scalars),
-            ignoreStructural: try boolValue(for: "ignoreStructural", in: scalars)
+            ignoreStructural: try boolValue(for: "ignoreStructural", in: scalars),
+            noCache: try boolValue(for: "noCache", in: scalars)
         )
     }
 

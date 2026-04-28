@@ -136,6 +136,12 @@ exclude:
   - "**/*.generated.swift"
   - "Sources/MyApp/Discovery/Operators/"
 
+# ── Cache ─────────────────────────────────────────────────────────────────────
+
+# Disable caching of tokenization results.
+# When true, files are re-tokenized on every run and no cache is read or written.
+# noCache: true
+
 # ── Cross-language ────────────────────────────────────────────────────────────
 
 # Also analyze Objective-C/C files (.m, .mm, .h, .c, .cpp).
@@ -199,6 +205,7 @@ Paths on the CLI override `paths:` in the YAML file. When no paths are given, th
 | `--exclude <pattern>` | — | glob | Exclude matching files (repeatable) |
 | `--ignore-same-file` | true | — | Skip clones within one file |
 | `--ignore-structural` | true | — | Skip Type 3 and Type 4 clones |
+| `--no-cache` | false | — | Disable tokenization cache |
 | `--cross-language` | false | — | Include Objective-C/C files |
 | `--suppression-tag <tag>` | `swiftcpd:ignore` | — | Custom suppression comment tag |
 | `--max-duplication <N>` | — | 0–100 | Fail if duplication % exceeds N |
@@ -237,6 +244,9 @@ swift-cpd --cross-language Sources/ ObjcSources/
 
 # Fail CI if duplication exceeds 3%
 swift-cpd --max-duplication 3 Sources/
+
+# Run without cache (useful after changing detection rules)
+swift-cpd --no-cache Sources/
 ```
 
 ---
