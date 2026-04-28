@@ -57,9 +57,10 @@ colonColon        — :: (C++ namespace qualifier, swift-syntax 603+)
 Uses the **swift-syntax** `Parser` to produce a full syntax tree from Swift source. Tokens are extracted from the tree walk and classified based on their syntactic role:
 
 - An `identifier` token whose parent node is `IdentifierTypeSyntax` or `MemberTypeSyntax` is promoted to `typeName`.
+- An `identifier` token whose parent is a `DeclReferenceExprSyntax` that is the callee of a `FunctionCallExprSyntax` is also promoted to `typeName`. This covers constructor and function call names (e.g., `Color(...)`, `GridToken(...)`).
 - All other structural positions default to `identifier`.
 
-This classification allows `TokenNormalizer` to produce distinct placeholders for names (`$ID`) and types (`$TYPE`), improving the precision of Type 1/2 matching.
+This classification allows `TokenNormalizer` to preserve type and callee names while replacing regular identifiers, improving the precision of Type 2 matching and reducing false positives between structurally similar but semantically unrelated code.
 
 ---
 
@@ -81,12 +82,11 @@ Replaces token text with language-agnostic placeholders:
 | Original | Placeholder | Applies to |
 |---|---|---|
 | Any identifier | `$ID` | `identifier` |
-| Any type name | `$TYPE` | `typeName` |
 | Any integer literal | `$NUM` | `integerLiteral` |
 | Any float literal | `$NUM` | `floatingLiteral` |
 | Any string literal | `$STR` | `stringLiteral` |
 
-Keywords, operators, and punctuation are preserved as-is.
+Type names, function/constructor callee names, keywords, operators, and punctuation are preserved as-is. This means `Color(r: 0)` and `GridToken(columns: 2)` produce different normalized sequences, preventing false positives between code that shares structural patterns but uses different types.
 
 After normalization, `var x = 5` and `var y = 10` produce the same token sequence: `var $ID = $NUM`. This is what enables Type 2 detection.
 
