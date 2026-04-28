@@ -150,7 +150,7 @@ struct ConfigurationIntegrationTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let pipelineResult = try await pipeline.analyze(files: files)

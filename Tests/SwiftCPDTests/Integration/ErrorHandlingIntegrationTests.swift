@@ -111,7 +111,7 @@ struct ErrorHandlingIntegrationTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: files)
@@ -173,7 +173,7 @@ struct ErrorHandlingIntegrationTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 50,
             minimumLineCount: 5,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: files)

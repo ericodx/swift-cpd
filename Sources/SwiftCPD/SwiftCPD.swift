@@ -195,8 +195,10 @@ extension SwiftCPD {
         AnalysisPipeline(
             minimumTokenCount: configuration.minimumTokenCount,
             minimumLineCount: configuration.minimumLineCount,
-            cacheDirectory: configuration.cacheDirectory,
-            noCache: configuration.noCache,
+            cache: AnalysisPipeline.CacheOptions(
+                directory: configuration.cacheDirectory,
+                disabled: configuration.noCache
+            ),
             crossLanguageEnabled: configuration.crossLanguageEnabled,
             thresholds: DetectionThresholds(
                 type3Similarity: configuration.type3Similarity,

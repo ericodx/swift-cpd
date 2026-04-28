@@ -39,7 +39,7 @@ struct DeterminismTests {
         let pipelineA = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheA
+            cache: .init(directory: cacheA)
         )
         let resultA = try await pipelineA.analyze(files: files)
 
@@ -47,7 +47,7 @@ struct DeterminismTests {
         let pipelineB = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheB
+            cache: .init(directory: cacheB)
         )
         let resultB = try await pipelineB.analyze(files: reversed)
 
@@ -119,7 +119,7 @@ struct DeterminismTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let discovery = SourceFileDiscovery(crossLanguageEnabled: false)

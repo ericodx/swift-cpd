@@ -39,7 +39,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1, .type2, .type3]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2, .type3]
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -66,7 +66,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
         )
         let result = try await pipeline.analyze(files: [fileB, fileA])
 
@@ -120,7 +120,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1, .type2]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2]
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -197,7 +197,7 @@ struct AnalysisPipelineMutationTests {
         try cSource.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1, cacheDirectory: cacheDir
+            minimumTokenCount: 5, minimumLineCount: 1, cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -217,7 +217,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
         )
         let result = try await pipeline.analyze(files: [fileZ, fileA])
 
@@ -255,7 +255,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -274,7 +274,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
         )
         let result = try await pipeline.analyze(files: [fileA])
 
@@ -310,7 +310,7 @@ struct AnalysisPipelineMutationTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1, .type2]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2]
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
