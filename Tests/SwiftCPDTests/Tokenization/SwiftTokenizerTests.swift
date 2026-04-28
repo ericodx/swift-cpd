@@ -145,6 +145,30 @@ struct SwiftTokenizerTests {
         #expect(helloToken?.kind == .stringLiteral)
     }
 
+    @Test("Given function call, when tokenizing, then classifies callee as typeName")
+    func functionCallCalleeClassification() {
+        let source = "let x = Color(r: 0, g: 0, b: 0)"
+        let tokens = tokenizer.tokenize(source: source, file: "test.swift")
+
+        let colorToken = tokens.first { $0.text == "Color" }
+        #expect(colorToken?.kind == .typeName)
+    }
+
+    @Test("Given static let with function call, when tokenizing, then classifies callee as typeName")
+    func staticLetFunctionCallClassification() {
+        let source = """
+            public enum Black {
+                public static let solid = Color(r: 0, g: 0, b: 0)
+                public static let opacity10 = Color(r: 0, g: 0, b: 0, a: 0.1)
+            }
+            """
+        let tokens = tokenizer.tokenize(source: source, file: "test.swift")
+
+        let colorTokens = tokens.filter { $0.text == "Color" }
+        #expect(colorTokens.count == 2)
+        #expect(colorTokens.allSatisfy { $0.kind == .typeName })
+    }
+
     @Test("Given C++ interop source with :: operator, when tokenizing, then returns punctuation")
     func colonColonOperator() {
         let source = "Foo::bar"
