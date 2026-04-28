@@ -37,7 +37,7 @@ struct AnalysisPipelineSortingTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1, .type2]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2]
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -73,7 +73,7 @@ struct AnalysisPipelineSortingTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1, .type2]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2]
         )
         let result = try await pipeline.analyze(files: [fileC, fileA, fileB])
 
@@ -105,7 +105,7 @@ struct AnalysisPipelineSortingTests {
 
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5, minimumLineCount: 1,
-            cacheDirectory: cacheDir, enabledCloneTypes: [.type1]
+            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -139,7 +139,7 @@ struct AnalysisPipelineSortingTests {
         try standardDuplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1, cacheDirectory: cacheDir
+            minimumTokenCount: 5, minimumLineCount: 1, cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA])
 
@@ -163,7 +163,7 @@ struct AnalysisPipelineSortingTests {
         try source.write(toFile: fileA, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1, cacheDirectory: cacheDir
+            minimumTokenCount: 5, minimumLineCount: 1, cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA])
 

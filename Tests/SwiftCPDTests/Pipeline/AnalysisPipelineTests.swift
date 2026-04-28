@@ -33,7 +33,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: [fileA, fileB])
@@ -69,7 +69,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let firstRun = try await pipeline.analyze(files: [fileA, fileB])
@@ -108,7 +108,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: [fileA, fileB])
@@ -156,7 +156,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let resultWithSuppression = try await pipeline.analyze(files: [fileA, fileB])
@@ -164,7 +164,7 @@ struct AnalysisPipelineTests {
         let pipelineNoSuppression = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir + "-nosup"
+            cache: .init(directory: cacheDir + "-nosup")
         )
 
         let resultWithout = try await pipelineNoSuppression.analyze(files: [
@@ -203,7 +203,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir,
+            cache: .init(directory: cacheDir),
             crossLanguageEnabled: true
         )
 
@@ -239,7 +239,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir,
+            cache: .init(directory: cacheDir),
             enabledCloneTypes: [.type1, .type2]
         )
 
@@ -276,7 +276,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: [fileZ, fileA])
@@ -315,7 +315,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: [fileA, fileB])
@@ -361,7 +361,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir,
+            cache: .init(directory: cacheDir),
             enabledCloneTypes: [.type3]
         )
 
@@ -386,7 +386,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let result = try await pipeline.analyze(files: [fileA])
@@ -423,7 +423,7 @@ struct AnalysisPipelineTests {
         let pipeline = AnalysisPipeline(
             minimumTokenCount: 5,
             minimumLineCount: 1,
-            cacheDirectory: cacheDir
+            cache: .init(directory: cacheDir)
         )
 
         let runA = try await pipeline.analyze(files: filePaths)

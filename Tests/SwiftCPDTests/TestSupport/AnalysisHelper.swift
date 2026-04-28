@@ -15,7 +15,7 @@ func analyzeDirectory(
     let pipeline = AnalysisPipeline(
         minimumTokenCount: minimumTokenCount,
         minimumLineCount: minimumLineCount,
-        cacheDirectory: cacheDir
+        cache: .init(directory: cacheDir)
     )
 
     let pipelineResult = try await pipeline.analyze(files: files)
