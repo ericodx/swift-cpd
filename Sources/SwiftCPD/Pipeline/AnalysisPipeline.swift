@@ -6,6 +6,7 @@ struct AnalysisPipeline: Sendable {
         minimumTokenCount: Int = 50,
         minimumLineCount: Int = 5,
         cacheDirectory: String = ".swift-cpd-cache",
+        noCache: Bool = false,
         crossLanguageEnabled: Bool = false,
         thresholds: DetectionThresholds = .defaults,
         inlineSuppressionTag: String = "swiftcpd:ignore",
@@ -14,6 +15,7 @@ struct AnalysisPipeline: Sendable {
         self.minimumTokenCount = minimumTokenCount
         self.minimumLineCount = minimumLineCount
         self.cacheDirectory = cacheDirectory
+        self.noCache = noCache
         self.crossLanguageEnabled = crossLanguageEnabled
         self.thresholds = thresholds
         self.suppressionScanner = SuppressionScanner(tag: inlineSuppressionTag)
@@ -23,6 +25,7 @@ struct AnalysisPipeline: Sendable {
     let minimumTokenCount: Int
     let minimumLineCount: Int
     let cacheDirectory: String
+    let noCache: Bool
     let crossLanguageEnabled: Bool
     let thresholds: DetectionThresholds
     let enabledCloneTypes: Set<CloneType>
@@ -36,11 +39,16 @@ struct AnalysisPipeline: Sendable {
 
     func analyze(files: [String]) async throws -> PipelineResult {
         let cache = FileCache()
-        await cache.load(from: cacheDirectory)
+
+        if !noCache {
+            await cache.load(from: cacheDirectory)
+        }
 
         let fileTokens = try await processFiles(files, cache: cache)
 
-        await cache.save(to: cacheDirectory)
+        if !noCache {
+            await cache.save(to: cacheDirectory)
+        }
 
         let totalTokens = fileTokens.reduce(0) { $0 + $1.tokens.count }
         let detectors = buildDetectors()

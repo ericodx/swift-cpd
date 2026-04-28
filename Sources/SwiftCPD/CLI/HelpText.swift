@@ -29,6 +29,7 @@ enum HelpText {
                                  Inline suppression tag (default: swiftcpd:ignore)
           --ignore-same-file     Ignore clones where all fragments are in the same file
           --ignore-structural    Ignore Type-3 and Type-4 clones (structural similarity)
+          --no-cache               Disable caching of tokenization results
           --cross-language       Enable cross-language detection (Swift + Objective-C/C)
           --version              Show version information
           --help                 Show this help message

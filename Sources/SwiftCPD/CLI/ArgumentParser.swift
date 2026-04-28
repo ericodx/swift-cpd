@@ -8,6 +8,7 @@ struct ArgumentParser: Sendable {
         "--cross-language",
         "--ignore-same-file",
         "--ignore-structural",
+        "--no-cache",
     ]
 
     func parse(_ arguments: [String]) throws -> ParsedArguments {
@@ -70,6 +71,8 @@ extension ArgumentParser {
             result.ignoreSameFile = true
         } else if flag == "--ignore-structural" {
             result.ignoreStructural = true
+        } else if flag == "--no-cache" {
+            result.noCache = true
         }
     }
 

@@ -15,4 +15,5 @@ struct YamlConfiguration: Sendable, Equatable {
     let enabledCloneTypes: [Int]?
     let ignoreSameFile: Bool?
     let ignoreStructural: Bool?
+    let noCache: Bool?
 }
