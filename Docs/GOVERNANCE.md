@@ -1,6 +1,6 @@
 # Governance
 
-Swift Code Duplication Detector is maintained by its original author and contributors.
+Swift Copy-Paste Detector is maintained by its original author and contributors.
 
 ## Decision Making
 

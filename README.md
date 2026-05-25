@@ -1,4 +1,4 @@
-# Swift Code Duplication Detector
+# Swift Copy-Paste Detector
 
 [![Swift Package Index](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fericodx%2Fswift-cpd%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ericodx/swift-cpd)
 [![Swift Package Index](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fericodx%2Fswift-cpd%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ericodx/swift-cpd)
