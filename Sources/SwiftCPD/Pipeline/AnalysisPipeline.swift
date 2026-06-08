@@ -24,20 +24,6 @@ struct AnalysisPipeline: Sendable {
     private let suppressionScanner: SuppressionScanner
     private let hasher = FileHasher()
 
-    struct SourceOptions: Sendable {
-
-        init(
-            reader: any SourceReader = WorkingTreeSourceReader(),
-            resolvedSha: String? = nil
-        ) {
-            self.reader = reader
-            self.resolvedSha = resolvedSha
-        }
-
-        var reader: any SourceReader
-        var resolvedSha: String?
-    }
-
     private static func compareCloneGroups(_ lhs: CloneGroup, _ rhs: CloneGroup) -> Bool {
         guard
             let lhsFirst = lhs.fragments.first,
