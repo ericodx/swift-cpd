@@ -52,6 +52,25 @@ struct AnalysisPipeline: Sendable {
         var resolvedSha: String?
     }
 
+    private static func compareCloneGroups(_ lhs: CloneGroup, _ rhs: CloneGroup) -> Bool {
+        guard
+            let lhsFirst = lhs.fragments.first,
+            let rhsFirst = rhs.fragments.first
+        else {
+            return false
+        }
+
+        if lhs.type.rawValue != rhs.type.rawValue {
+            return lhs.type.rawValue < rhs.type.rawValue
+        }
+
+        if lhsFirst.file != rhsFirst.file {
+            return lhsFirst.file < rhsFirst.file
+        }
+
+        return lhsFirst.startLine < rhsFirst.startLine
+    }
+
     func analyze(files: [String]) async throws -> PipelineResult {
         let fileCache = FileCache()
 
@@ -74,14 +93,7 @@ struct AnalysisPipeline: Sendable {
             allClones += filterByEnabledTypes(detected)
         }
 
-        let sortedClones = allClones.sorted {
-            guard let lhs = $0.fragments.first, let rhs = $1.fragments.first else { return false }
-
-            if $0.type.rawValue != $1.type.rawValue { return $0.type.rawValue < $1.type.rawValue }
-            if lhs.file != rhs.file { return lhs.file < rhs.file }
-
-            return lhs.startLine < rhs.startLine
-        }
+        let sortedClones = allClones.sorted(by: Self.compareCloneGroups)
 
         return PipelineResult(
             cloneGroups: sortedClones,
