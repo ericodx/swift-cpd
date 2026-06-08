@@ -61,17 +61,25 @@ extension Configuration {
         let yamlFormat = yaml?.outputFormat.flatMap { OutputFormat(rawValue: $0) }
         self.outputFormat = parsed.format ?? yamlFormat ?? .text
 
-        if parsed.baselineGenerate {
-            self.baselineMode = .generate
-        } else if parsed.baselineUpdate {
-            self.baselineMode = .update
-        } else if parsed.baselineFilePath != nil {
-            self.baselineMode = .compare
-        } else {
-            self.baselineMode = .none
-        }
+        self.baselineMode = Self.resolveBaselineMode(from: parsed)
 
         try validate()
+    }
+
+    private static func resolveBaselineMode(from parsed: ParsedArguments) -> BaselineMode {
+        switch (parsed.baselineGenerate, parsed.baselineUpdate, parsed.baselineFilePath) {
+        case (true, _, _):
+            return .generate
+
+        case (_, true, _):
+            return .update
+
+        case (_, _, .some):
+            return .compare
+
+        default:
+            return .none
+        }
     }
 }
 
