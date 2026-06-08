@@ -2,11 +2,6 @@ import Foundation
 
 struct AnalysisPipeline: Sendable {
 
-    struct CacheOptions: Sendable {
-        var directory: String
-        var disabled: Bool = false
-    }
-
     init(
         minimumTokenCount: Int = 50,
         minimumLineCount: Int = 5,
@@ -38,6 +33,11 @@ struct AnalysisPipeline: Sendable {
     private let normalizer = TokenNormalizer()
     private let suppressionScanner: SuppressionScanner
     private let hasher = FileHasher()
+
+    struct CacheOptions: Sendable {
+        var directory: String
+        var disabled: Bool = false
+    }
 
     func analyze(files: [String]) async throws -> PipelineResult {
         let fileCache = FileCache()
