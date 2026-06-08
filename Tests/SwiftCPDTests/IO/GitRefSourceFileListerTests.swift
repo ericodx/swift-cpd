@@ -15,7 +15,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/B.swift", content: "let b = 1\n")
         let sha = try repo.commit()
 
-        let lister = makeLister(sha: sha, repoRoot: repo.root)
+        let lister = makeGitRefSourceFileLister(sha: sha, repoRoot: repo.root)
         let files = try lister.listFiles(in: ["Sources"])
 
         #expect(files.count == 2)
@@ -35,7 +35,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/C.swift", content: "let c = 1\n")
         let featureSha = try repo.commit(message: "feature")
 
-        let lister = makeLister(sha: featureSha, repoRoot: repo.root, ref: "feature")
+        let lister = makeGitRefSourceFileLister(sha: featureSha, repoRoot: repo.root, ref: "feature")
         let files = try lister.listFiles(in: ["Sources"])
 
         #expect(files.count == 2)
@@ -52,7 +52,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/Generated/Auto.swift", content: "let y = 2\n")
         let sha = try repo.commit()
 
-        let lister = makeLister(
+        let lister = makeGitRefSourceFileLister(
             sha: sha,
             repoRoot: repo.root,
             excludePatterns: ["**/Generated/**"]
@@ -73,7 +73,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/C.m", content: "/* objc */\n")
         let sha = try repo.commit()
 
-        let lister = makeLister(sha: sha, repoRoot: repo.root)
+        let lister = makeGitRefSourceFileLister(sha: sha, repoRoot: repo.root)
         let files = try lister.listFiles(in: ["Sources"])
 
         #expect(files.count == 1)
@@ -89,7 +89,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/Bridge.m", content: "/* objc */\n")
         let sha = try repo.commit()
 
-        let lister = makeLister(sha: sha, repoRoot: repo.root, crossLanguageEnabled: true)
+        let lister = makeGitRefSourceFileLister(sha: sha, repoRoot: repo.root, crossLanguageEnabled: true)
         let files = try lister.listFiles(in: ["Sources"])
 
         #expect(files.count == 2)
@@ -116,7 +116,7 @@ struct GitRefSourceFileListerTests {
         }
 
         let resolved = try GitRefResolver().resolve(ref: "feature", in: worktreePath)
-        let lister = makeLister(
+        let lister = makeGitRefSourceFileLister(
             sha: resolved.resolvedSha,
             repoRoot: resolved.repositoryRoot,
             ref: "feature"
@@ -139,7 +139,7 @@ struct GitRefSourceFileListerTests {
         try repo.run("update-index", "--add", "--cacheinfo", "160000,\(headSha),SubProject")
 
         let captured = CapturedStderr()
-        let lister = makeLister(
+        let lister = makeGitRefSourceFileLister(
             sha: ":0",
             repoRoot: repo.root,
             ref: ":0",
@@ -161,7 +161,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
         let sha = try repo.commit()
 
-        let lister = makeLister(sha: sha, repoRoot: repo.root, ref: "HEAD")
+        let lister = makeGitRefSourceFileLister(sha: sha, repoRoot: repo.root, ref: "HEAD")
 
         #expect {
             _ = try lister.listFiles(in: ["Missing"])
@@ -183,7 +183,7 @@ struct GitRefSourceFileListerTests {
         try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
         let sha = try repo.commit()
 
-        let lister = makeLister(sha: sha, repoRoot: repo.root)
+        let lister = makeGitRefSourceFileLister(sha: sha, repoRoot: repo.root)
         let outsidePath = "/tmp/definitely-outside-this-repo-\(UUID().uuidString)"
 
         #expect {
@@ -198,30 +198,4 @@ struct GitRefSourceFileListerTests {
         }
     }
 
-    private func makeLister(
-        sha: String,
-        repoRoot: String,
-        ref: String = "HEAD",
-        crossLanguageEnabled: Bool = false,
-        excludePatterns: [String] = [],
-        stderr: (@Sendable (String) -> Void)? = nil
-    ) -> GitRefSourceFileLister {
-        if let stderr {
-            return GitRefSourceFileLister(
-                ref: ref,
-                resolvedSha: sha,
-                repositoryRoot: repoRoot,
-                crossLanguageEnabled: crossLanguageEnabled,
-                excludePatterns: excludePatterns,
-                stderr: stderr
-            )
-        }
-        return GitRefSourceFileLister(
-            ref: ref,
-            resolvedSha: sha,
-            repositoryRoot: repoRoot,
-            crossLanguageEnabled: crossLanguageEnabled,
-            excludePatterns: excludePatterns
-        )
-    }
 }
