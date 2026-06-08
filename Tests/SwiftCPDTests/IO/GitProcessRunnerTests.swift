@@ -25,6 +25,16 @@ struct GitProcessRunnerTests {
         #expect(!result.stderr.isEmpty)
     }
 
+    @Test("Given non-existent working directory, when running, then throws gitExecutableNotFound")
+    func throwsWhenWorkingDirectoryDoesNotExist() {
+        let runner = GitProcessRunner()
+        let missing = "/var/folders/swift-cpd-does-not-exist-\(UUID().uuidString)"
+
+        #expect(throws: SourceRefError.gitExecutableNotFound) {
+            _ = try runner.run(args: ["--version"], workingDirectory: missing)
+        }
+    }
+
     @Test("Given PATH without git, when running, then throws gitExecutableNotFound")
     func throwsWhenGitMissingFromPath() {
         let runner = GitProcessRunner(environment: ["PATH": ""])
