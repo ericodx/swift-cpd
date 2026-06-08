@@ -17,8 +17,8 @@ struct FileCacheTests {
             normalizedTokens: [Token(kind: .keyword, text: "let", location: location)]
         )
 
-        await cache.store(file: "A.swift", entry: entry)
-        let result = await cache.lookup(file: "A.swift", contentHash: "abc123")
+        await cache.store(key: CacheKey(file: "A.swift"), entry: entry)
+        let result = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "abc123")
 
         #expect(result != nil)
         #expect(result?.tokens.count == 1)
@@ -33,8 +33,8 @@ struct FileCacheTests {
             normalizedTokens: [Token(kind: .keyword, text: "let", location: location)]
         )
 
-        await cache.store(file: "A.swift", entry: entry)
-        let result = await cache.lookup(file: "A.swift", contentHash: "different_hash")
+        await cache.store(key: CacheKey(file: "A.swift"), entry: entry)
+        let result = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "different_hash")
 
         #expect(result == nil)
     }
@@ -54,12 +54,12 @@ struct FileCacheTests {
         )
 
         let cacheA = FileCache()
-        await cacheA.store(file: "A.swift", entry: entry)
+        await cacheA.store(key: CacheKey(file: "A.swift"), entry: entry)
         await cacheA.save(to: tempDir)
 
         let cacheB = FileCache()
         await cacheB.load(from: tempDir)
-        let result = await cacheB.lookup(file: "A.swift", contentHash: "abc123")
+        let result = await cacheB.lookup(key: CacheKey(file: "A.swift"), contentHash: "abc123")
 
         #expect(result != nil)
         #expect(result?.tokens.first?.text == "x")
@@ -86,7 +86,7 @@ struct FileCacheTests {
 
         let cache = FileCache()
         await cache.load(from: tempDir)
-        let result = await cache.lookup(file: "A.swift", contentHash: "abc123")
+        let result = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "abc123")
 
         #expect(result == nil)
     }
@@ -95,7 +95,7 @@ struct FileCacheTests {
     func loadFromNonexistentDirectory() async {
         let cache = FileCache()
         await cache.load(from: "/nonexistent/path/\(UUID().uuidString)")
-        let result = await cache.lookup(file: "A.swift", contentHash: "abc123")
+        let result = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "abc123")
 
         #expect(result == nil)
     }
@@ -117,7 +117,7 @@ struct FileCacheTests {
             normalizedTokens: [Token(kind: .keyword, text: "let", location: location)]
         )
 
-        await cache.store(file: "A.swift", entry: entry)
+        await cache.store(key: CacheKey(file: "A.swift"), entry: entry)
         await cache.save(to: tempDir)
 
         #expect(!FileManager.default.fileExists(atPath: tempDir + "/cache.json"))
@@ -153,7 +153,7 @@ struct FileCacheTests {
             normalizedTokens: [Token(kind: .keyword, text: "let", location: location)]
         )
 
-        await cache.store(file: "A.swift", entry: entry)
+        await cache.store(key: CacheKey(file: "A.swift"), entry: entry)
         await cache.save(to: tempDir)
     }
 }

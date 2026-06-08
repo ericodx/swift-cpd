@@ -139,7 +139,9 @@ extension AnalysisPipeline {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
 
-        if let cached = await cache.lookup(file: filePath, contentHash: contentHash) {
+        let cacheKey = CacheKey(file: filePath, resolvedSha: nil)
+
+        if let cached = await cache.lookup(key: cacheKey, contentHash: contentHash) {
             return FileTokens(
                 file: filePath,
                 source: source,
@@ -169,7 +171,7 @@ extension AnalysisPipeline {
             normalizedTokens: normalizedTokens
         )
 
-        await cache.store(file: filePath, entry: entry)
+        await cache.store(key: cacheKey, entry: entry)
 
         return FileTokens(
             file: filePath,
