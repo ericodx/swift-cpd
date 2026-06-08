@@ -33,7 +33,8 @@ struct ConfigurationCrossLanguageTests {
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -71,7 +72,8 @@ struct ConfigurationCrossLanguageTests {
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)

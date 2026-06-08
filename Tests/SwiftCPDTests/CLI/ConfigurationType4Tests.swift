@@ -24,7 +24,8 @@ struct ConfigurationType4Tests {
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -52,7 +53,8 @@ struct ConfigurationType4Tests {
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
