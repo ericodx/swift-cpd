@@ -182,13 +182,13 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        switch flag {
-        case "--type4-similarity":
-            result.type4Similarity = try requireInteger(for: flag, at: &index, in: args)
-
-        default:
+        guard
+            flag == "--type4-similarity"
+        else {
             throw ArgumentParsingError.unknownFlag(flag)
         }
+
+        result.type4Similarity = try requireInteger(for: flag, at: &index, in: args)
     }
 
     private func requireValue(for flag: String, at index: inout Int, in args: [String]) throws -> String {
