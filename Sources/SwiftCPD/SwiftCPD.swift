@@ -59,11 +59,8 @@ struct SwiftCPD {
 extension SwiftCPD {
 
     private static func runAnalysis(_ configuration: Configuration) async throws -> ExitCode {
-        let lister = FilesystemSourceFileLister(
-            crossLanguageEnabled: configuration.crossLanguageEnabled,
-            excludePatterns: configuration.excludePatterns
-        )
-        let files = try lister.listFiles(in: configuration.paths)
+        let sourceIO = try buildSourceIO(configuration: configuration)
+        let files = try sourceIO.lister.listFiles(in: configuration.paths)
 
         guard
             !files.isEmpty
@@ -72,7 +69,7 @@ extension SwiftCPD {
             return .configurationError
         }
 
-        let pipeline = buildPipeline(from: configuration)
+        let pipeline = buildPipeline(from: configuration, sourceReader: sourceIO.reader)
 
         let progressReporter = ProgressReporter(totalFiles: files.count)
 
@@ -191,7 +188,10 @@ extension SwiftCPD {
 
 extension SwiftCPD {
 
-    private static func buildPipeline(from configuration: Configuration) -> AnalysisPipeline {
+    private static func buildPipeline(
+        from configuration: Configuration,
+        sourceReader: any SourceReader
+    ) -> AnalysisPipeline {
         AnalysisPipeline(
             minimumTokenCount: configuration.minimumTokenCount,
             minimumLineCount: configuration.minimumLineCount,
@@ -207,8 +207,41 @@ extension SwiftCPD {
                 type4Similarity: configuration.type4Similarity
             ),
             inlineSuppressionTag: configuration.inlineSuppressionTag,
-            enabledCloneTypes: configuration.enabledCloneTypes
+            enabledCloneTypes: configuration.enabledCloneTypes,
+            sourceReader: sourceReader
         )
+    }
+
+    private static func buildSourceIO(
+        configuration: Configuration
+    ) throws -> (lister: any SourceFileLister, reader: any SourceReader) {
+        guard
+            let sourceRef = configuration.sourceRef
+        else {
+            let lister = FilesystemSourceFileLister(
+                crossLanguageEnabled: configuration.crossLanguageEnabled,
+                excludePatterns: configuration.excludePatterns
+            )
+            return (lister, WorkingTreeSourceReader())
+        }
+
+        let resolved = try GitRefResolver().resolve(
+            ref: sourceRef,
+            in: FileManager.default.currentDirectoryPath
+        )
+        let lister = GitRefSourceFileLister(
+            ref: sourceRef,
+            resolvedSha: resolved.resolvedSha,
+            repositoryRoot: resolved.repositoryRoot,
+            crossLanguageEnabled: configuration.crossLanguageEnabled,
+            excludePatterns: configuration.excludePatterns
+        )
+        let reader = GitRefSourceReader(
+            ref: sourceRef,
+            resolvedSha: resolved.resolvedSha,
+            repositoryRoot: resolved.repositoryRoot
+        )
+        return (lister, reader)
     }
 
     private static func filterCloneGroups(
