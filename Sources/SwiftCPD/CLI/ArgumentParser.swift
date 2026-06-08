@@ -136,6 +136,9 @@ extension ArgumentParser {
         case "--types":
             result.enabledCloneTypes = try requireCloneTypes(for: flag, at: &index, in: args)
 
+        case "--source-ref":
+            result.sourceRef = try requireValue(for: flag, at: &index, in: args)
+
         default:
             throw ArgumentParsingError.unknownFlag(flag)
         }

@@ -25,4 +25,5 @@ struct ParsedArguments: Sendable, Equatable {
     var enabledCloneTypes: Set<CloneType>?
     var cacheDirectory: String?
     var noCache: Bool = false
+    var sourceRef: String?
 }
