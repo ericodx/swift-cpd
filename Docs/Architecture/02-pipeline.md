@@ -102,15 +102,35 @@ The detectors themselves are pure value-type functions (`struct` conforming to `
 
 ## Configuration Thresholds
 
+Pipeline parameters live inside three nested option structs on `AnalysisPipeline`.
+
+**`DetectionOptions`** — detection-time knobs:
+
 | Parameter | Default | Purpose |
 |---|---|---|
 | `minimumTokenCount` | 50 | Minimum clone size (in tokens) |
 | `minimumLineCount` | 5 | Minimum clone size (in lines) |
-| `type3Similarity` | 70% | Minimum GST similarity for Type 3 |
-| `type3TileSize` | 5 | Minimum matching tile length |
-| `type3CandidateThreshold` | 30% | Jaccard pre-filter for Type 3 |
-| `type4Similarity` | 80% | Minimum combined similarity for Type 4 |
-| `sourceFileResolvedSha` | `nil` | When set, namespaces cache entries by this sha so runs against different refs don't collide |
+| `thresholds.type3Similarity` | 70% | Minimum GST similarity for Type 3 |
+| `thresholds.type3TileSize` | 5 | Minimum matching tile length |
+| `thresholds.type3CandidateThreshold` | 30% | Jaccard pre-filter for Type 3 |
+| `thresholds.type4Similarity` | 80% | Minimum combined similarity for Type 4 |
+| `enabledCloneTypes` | all four | Which clone types to run |
+| `crossLanguageEnabled` | `false` | Map C-family tokens to Swift equivalents |
+| `inlineSuppressionTag` | `swiftcpd:ignore` | Comment tag for inline suppression |
+
+**`CacheOptions`** — on-disk cache:
+
+| Parameter | Default | Purpose |
+|---|---|---|
+| `directory` | _(required)_ | Where `cache.json` lives |
+| `disabled` | `false` | Bypass cache reads/writes entirely |
+
+**`SourceOptions`** — where bytes come from:
+
+| Parameter | Default | Purpose |
+|---|---|---|
+| `reader` | `WorkingTreeSourceReader()` | Implementation of `SourceReader` |
+| `resolvedSha` | `nil` | When set, namespaces cache entries by this sha so runs against different refs don't collide |
 
 ---
 
