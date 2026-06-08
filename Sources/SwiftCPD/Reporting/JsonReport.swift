@@ -7,10 +7,6 @@ struct JsonReport: Encodable {
     let sourceRef: String?
     let resolvedSha: String?
 
-    enum CodingKeys: String, CodingKey {
-        case clones, metadata, resolvedSha, sourceRef, summary, version
-    }
-
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(clones, forKey: .clones)
