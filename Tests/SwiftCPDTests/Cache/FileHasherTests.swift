@@ -41,4 +41,35 @@ struct FileHasherTests {
 
         #expect(hashA != hashB)
     }
+
+    @Test("Given known input, when hashing data, then matches reference SHA-256")
+    func hashesDataAgainstKnownDigest() {
+        let data = Data("abc".utf8)
+        let expected = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+
+        #expect(hasher.hash(data: data) == expected)
+    }
+
+    @Test("Given same bytes, when hashing data and hashing file with same contents, then results match")
+    func dataAndFileHashesAgree() throws {
+        let tempDir = FileManager.default.temporaryDirectory
+        let filePath = tempDir.appendingPathComponent("hash_eq_\(UUID().uuidString).bin").path
+        let data = Data([0x00, 0x01, 0x02, 0xFF, 0xFE])
+
+        try data.write(to: URL(fileURLWithPath: filePath))
+        defer { try? FileManager.default.removeItem(atPath: filePath) }
+
+        let fileHash = try hasher.hash(contentsOf: filePath)
+        let dataHash = hasher.hash(data: data)
+
+        #expect(fileHash == dataHash)
+        #expect(dataHash.count == 64)
+    }
+
+    @Test("Given empty data, when hashing, then returns SHA-256 of empty input")
+    func hashesEmptyData() {
+        let empty = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+        #expect(hasher.hash(data: Data()) == empty)
+    }
 }
