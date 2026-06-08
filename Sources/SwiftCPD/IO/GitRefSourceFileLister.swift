@@ -88,25 +88,28 @@ struct GitRefSourceFileLister: SourceFileLister {
 extension GitRefSourceFileLister {
 
     private func repositoryRelative(for input: String) throws -> String {
-        let absolute =
-            input.hasPrefix("/")
-            ? (input as NSString).standardizingPath
-            : ((repositoryRoot + "/" + input) as NSString).standardizingPath
+        let absolute = standardize(
+            input.hasPrefix("/") ? input : repositoryRoot + "/" + input
+        )
+        let normalizedRoot = standardize(repositoryRoot)
+        let rootWithSlash = normalizedRoot.hasSuffix("/") ? normalizedRoot : normalizedRoot + "/"
 
-        let normalizedRoot = repositoryRoot.hasSuffix("/") ? repositoryRoot : repositoryRoot + "/"
-
-        if absolute == repositoryRoot {
+        if absolute == normalizedRoot {
             return ""
         }
 
-        if absolute.hasPrefix(normalizedRoot) {
-            return String(absolute.dropFirst(normalizedRoot.count))
+        if absolute.hasPrefix(rootWithSlash) {
+            return String(absolute.dropFirst(rootWithSlash.count))
         }
 
         throw FileDiscoveryError.pathOutsideRepository(
             path: input,
             repositoryRoot: repositoryRoot
         )
+    }
+
+    private func standardize(_ path: String) -> String {
+        (path as NSString).standardizingPath
     }
 
     private func lsEntries(scope: String) throws -> [TreeEntry] {

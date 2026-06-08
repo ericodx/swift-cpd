@@ -44,15 +44,18 @@ struct GitRefSourceReader: SourceReader {
 extension GitRefSourceReader {
 
     private func repositoryRelativePath(for file: String) throws -> String {
-        let absolute = absolutePath(for: file)
-        let normalizedRoot = repositoryRoot.hasSuffix("/") ? repositoryRoot : repositoryRoot + "/"
+        let absolute = standardize(
+            file.hasPrefix("/") ? file : repositoryRoot + "/" + file
+        )
+        let normalizedRoot = standardize(repositoryRoot)
+        let rootWithSlash = normalizedRoot.hasSuffix("/") ? normalizedRoot : normalizedRoot + "/"
 
-        if absolute.hasPrefix(normalizedRoot) {
-            return String(absolute.dropFirst(normalizedRoot.count))
+        if absolute == normalizedRoot {
+            return ""
         }
 
-        if absolute == repositoryRoot {
-            return ""
+        if absolute.hasPrefix(rootWithSlash) {
+            return String(absolute.dropFirst(rootWithSlash.count))
         }
 
         if !file.hasPrefix("/") {
@@ -65,11 +68,7 @@ extension GitRefSourceReader {
         )
     }
 
-    private func absolutePath(for file: String) -> String {
-        if file.hasPrefix("/") {
-            return (file as NSString).standardizingPath
-        }
-
-        return ((repositoryRoot + "/" + file) as NSString).standardizingPath
+    private func standardize(_ path: String) -> String {
+        (path as NSString).standardizingPath
     }
 }
