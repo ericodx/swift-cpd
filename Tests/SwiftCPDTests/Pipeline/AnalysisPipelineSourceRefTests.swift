@@ -11,8 +11,8 @@ struct AnalysisPipelineSourceRefTests {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource)
-        try repo.writeFile("Sources/B.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource)
+        try repo.writeFile("Sources/B.swift", content: standardDuplicateSource)
         try repo.commit()
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
@@ -30,8 +30,8 @@ struct AnalysisPipelineSourceRefTests {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource)
-        try repo.writeFile("Sources/B.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource)
+        try repo.writeFile("Sources/B.swift", content: standardDuplicateSource)
         let sha = try repo.commit()
 
         try repo.writeFile("Sources/A.swift", content: "// unrelated working-tree edit\n")
@@ -63,8 +63,8 @@ struct AnalysisPipelineSourceRefTests {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource)
-        try repo.writeFile("Sources/B.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource)
+        try repo.writeFile("Sources/B.swift", content: standardDuplicateSource)
         let sha = try repo.commit()
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
@@ -85,8 +85,8 @@ struct AnalysisPipelineSourceRefTests {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource)
-        try repo.writeFile("Sources/B.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource)
+        try repo.writeFile("Sources/B.swift", content: standardDuplicateSource)
         let firstSha = try repo.commit(message: "first")
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
@@ -100,7 +100,7 @@ struct AnalysisPipelineSourceRefTests {
         )
         _ = try await firstPipeline.analyze(files: firstFiles)
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource + "\n// changed\n")
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource + "\n// changed\n")
         let secondSha = try repo.commit(message: "second")
         #expect(firstSha != secondSha)
 
@@ -126,8 +126,8 @@ struct AnalysisPipelineSourceRefTests {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource)
-        try repo.writeFile("Sources/B.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource)
+        try repo.writeFile("Sources/B.swift", content: standardDuplicateSource)
         let firstSha = try repo.commit(message: "first")
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
@@ -144,7 +144,7 @@ struct AnalysisPipelineSourceRefTests {
         )
         _ = try await firstPipeline.analyze(files: firstFiles)
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource + "\n// v2\n")
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource + "\n// v2\n")
         try repo.commit(message: "second")
 
         let secondResolved = try GitRefResolver().resolve(ref: "main", in: repo.root)
@@ -174,11 +174,11 @@ struct AnalysisPipelineSourceRefTests {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
-        try repo.writeFile("Sources/A.swift", content: "// swiftcpd:ignore\n" + duplicatedSource)
-        try repo.writeFile("Sources/B.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: "// swiftcpd:ignore\n" + standardDuplicateSource)
+        try repo.writeFile("Sources/B.swift", content: standardDuplicateSource)
         let sha = try repo.commit()
 
-        try repo.writeFile("Sources/A.swift", content: duplicatedSource)
+        try repo.writeFile("Sources/A.swift", content: standardDuplicateSource)
 
         let files = [repo.root + "/Sources/A.swift", repo.root + "/Sources/B.swift"]
 
@@ -217,13 +217,3 @@ struct AnalysisPipelineSourceRefTests {
         return try JSONDecoder().decode(FileCache.Envelope.self, from: data)
     }
 }
-
-private let duplicatedSource = """
-    func calculate() -> Int {
-        let value = 42
-        let result = value * 2
-        let adjusted = result + 10
-        let final = adjusted - 5
-        return final
-    }
-    """
