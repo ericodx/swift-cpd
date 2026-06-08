@@ -18,12 +18,12 @@ struct GitRepositoryFixture {
     private let runner: GitProcessRunner
 
     @discardableResult
-    func run(_ args: String...) throws -> GitProcessRunner.Result {
+    func run(_ args: String...) throws -> GitProcessRunner.ProcessOutput {
         try run(arguments: args)
     }
 
     @discardableResult
-    func run(arguments: [String]) throws -> GitProcessRunner.Result {
+    func run(arguments: [String]) throws -> GitProcessRunner.ProcessOutput {
         let result = try runner.run(args: arguments, workingDirectory: root)
 
         guard

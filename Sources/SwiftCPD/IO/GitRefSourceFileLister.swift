@@ -105,7 +105,7 @@ extension GitRefSourceFileLister {
             .compactMap(parseEntry)
     }
 
-    private func runListing(scope: String) throws -> GitProcessRunner.Result {
+    private func runListing(scope: String) throws -> GitProcessRunner.ProcessOutput {
         if resolvedSha == ":0" {
             var args = ["ls-files", "--stage"]
             if !scope.isEmpty {
