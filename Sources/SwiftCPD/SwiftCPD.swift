@@ -69,7 +69,11 @@ extension SwiftCPD {
             return .configurationError
         }
 
-        let pipeline = buildPipeline(from: configuration, sourceReader: sourceIO.reader)
+        let pipeline = buildPipeline(
+            from: configuration,
+            sourceReader: sourceIO.reader,
+            resolvedSha: sourceIO.resolvedSha
+        )
 
         let progressReporter = ProgressReporter(totalFiles: files.count)
 
@@ -190,7 +194,8 @@ extension SwiftCPD {
 
     private static func buildPipeline(
         from configuration: Configuration,
-        sourceReader: any SourceReader
+        sourceReader: any SourceReader,
+        resolvedSha: String?
     ) -> AnalysisPipeline {
         AnalysisPipeline(
             minimumTokenCount: configuration.minimumTokenCount,
@@ -208,13 +213,14 @@ extension SwiftCPD {
             ),
             inlineSuppressionTag: configuration.inlineSuppressionTag,
             enabledCloneTypes: configuration.enabledCloneTypes,
-            sourceReader: sourceReader
+            sourceReader: sourceReader,
+            sourceFileResolvedSha: resolvedSha
         )
     }
 
     private static func buildSourceIO(
         configuration: Configuration
-    ) throws -> (lister: any SourceFileLister, reader: any SourceReader) {
+    ) throws -> (lister: any SourceFileLister, reader: any SourceReader, resolvedSha: String?) {
         guard
             let sourceRef = configuration.sourceRef
         else {
@@ -222,7 +228,7 @@ extension SwiftCPD {
                 crossLanguageEnabled: configuration.crossLanguageEnabled,
                 excludePatterns: configuration.excludePatterns
             )
-            return (lister, WorkingTreeSourceReader())
+            return (lister, WorkingTreeSourceReader(), nil)
         }
 
         let resolved = try GitRefResolver().resolve(
@@ -241,7 +247,7 @@ extension SwiftCPD {
             resolvedSha: resolved.resolvedSha,
             repositoryRoot: resolved.repositoryRoot
         )
-        return (lister, reader)
+        return (lister, reader, resolved.resolvedSha)
     }
 
     private static func filterCloneGroups(

@@ -10,7 +10,8 @@ struct AnalysisPipeline: Sendable {
         thresholds: DetectionThresholds = .defaults,
         inlineSuppressionTag: String = "swiftcpd:ignore",
         enabledCloneTypes: Set<CloneType> = Set(CloneType.allCases),
-        sourceReader: any SourceReader = WorkingTreeSourceReader()
+        sourceReader: any SourceReader = WorkingTreeSourceReader(),
+        sourceFileResolvedSha: String? = nil
     ) {
         self.minimumTokenCount = minimumTokenCount
         self.minimumLineCount = minimumLineCount
@@ -20,6 +21,7 @@ struct AnalysisPipeline: Sendable {
         self.suppressionScanner = SuppressionScanner(tag: inlineSuppressionTag)
         self.enabledCloneTypes = enabledCloneTypes
         self.sourceReader = sourceReader
+        self.sourceFileResolvedSha = sourceFileResolvedSha
     }
 
     let minimumTokenCount: Int
@@ -36,6 +38,7 @@ struct AnalysisPipeline: Sendable {
     private let suppressionScanner: SuppressionScanner
     private let hasher = FileHasher()
     private let sourceReader: any SourceReader
+    private let sourceFileResolvedSha: String?
 
     struct CacheOptions: Sendable {
         var directory: String
@@ -139,7 +142,7 @@ extension AnalysisPipeline {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
 
-        let cacheKey = CacheKey(file: filePath, resolvedSha: nil)
+        let cacheKey = CacheKey(file: filePath, resolvedSha: sourceFileResolvedSha)
 
         if let cached = await cache.lookup(key: cacheKey, contentHash: contentHash) {
             return FileTokens(
