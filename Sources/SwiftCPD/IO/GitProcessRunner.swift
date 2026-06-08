@@ -8,12 +8,6 @@ struct GitProcessRunner: Sendable {
 
     private let environment: [String: String]?
 
-    struct ProcessOutput: Sendable {
-        let stdout: Data
-        let stderr: String
-        let exitCode: Int32
-    }
-
     func run(args: [String], workingDirectory: String) throws -> ProcessOutput {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
