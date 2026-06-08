@@ -62,26 +62,51 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[File path + content hash] --> B{Entry exists<br/>and hash matches?}
+    A[CacheKey + content hash] --> B{Entry exists<br/>and hash matches?}
     B -- yes --> C[Return cached tokens]
     B -- no --> D[Tokenize + normalize]
     D --> E[Update actor state]
-    E --> F[Persist to cache.json]
+    E --> F[Persist as Envelope to cache.json]
     D --> G[Return fresh tokens]
 ```
+
+**Cache key:**
+
+```
+CacheKey
+├── file        — absolute path
+└── resolvedSha — nil (working tree) or the git sha when --source-ref is set
+
+  encoded → "<resolvedSha>|<path>"  when sha is non-nil
+            "<path>"                 when sha is nil
+```
+
+The composite key lets entries from different source refs coexist in the same cache without collision. The working-tree namespace lives at the top level (no `|`); each git ref gets its own namespace prefixed by the resolved sha.
 
 **Cache entry:**
 
 ```
 CacheEntry
-├── contentHash  — SHA-256 of file contents
-├── tokens       — original Token list
-└── normalizedTokens — normalized Token list
+├── contentHash       — SHA-256 of file contents
+├── tokens            — original Token list
+└── normalizedTokens  — normalized Token list
+```
+
+**On-disk envelope (schema v2):**
+
+```
+Envelope
+├── schemaVersion: 2
+└── entries: [String: CacheEntry]   // keyed by CacheKey.encoded
 ```
 
 The cache is stored at `.swift-cpd-cache/cache.json` (configurable via `--cache-dir`). I/O operations are offloaded to a `Task.detached` to avoid blocking the actor while the caller awaits the result.
 
 Caching can be disabled entirely with `--no-cache` or `noCache: true` in the YAML file. When disabled, files are re-tokenized on every run and no cache is read or written.
+
+### Schema versioning
+
+The on-disk format is wrapped in a versioned envelope. On load, if `schemaVersion` does not match the current version, the cache is **silently discarded** — the next run pays one full tokenization pass, then steady state resumes. There is no migration path between schemas. Pre-v2 files (raw `[String: CacheEntry]`) fail to decode as `Envelope` and are likewise discarded.
 
 ---
 
