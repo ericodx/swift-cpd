@@ -46,14 +46,18 @@ struct YamlConfigurationParser: Sendable {
             let rawValue = String(trimmed[trimmed.index(after: colonIndex)...])
                 .trimmingCharacters(in: .whitespaces)
 
-            if rawValue.isEmpty {
+            switch rawValue {
+            case "":
                 currentArrayKey = key
                 arrays[key] = []
-            } else if rawValue == "[]" {
+
+            case "[]":
                 arrays[key] = []
-            } else if rawValue.hasPrefix("[") {
+
+            case let value where value.hasPrefix("["):
                 throw ParseError.invalid
-            } else {
+
+            default:
                 scalars[key] = unquote(rawValue)
             }
         }
