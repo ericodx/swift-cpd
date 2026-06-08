@@ -443,4 +443,33 @@ struct ArgumentParserTests {
             try parser.parse(["swift-cpd", "--cache-dir"])
         }
     }
+
+    @Test("Given --source-ref with value, when parsing, then captures the ref")
+    func sourceRefFlag() throws {
+        let result = try parser.parse(["swift-cpd", "--source-ref", "HEAD", "Sources/"])
+
+        #expect(result.sourceRef == "HEAD")
+        #expect(result.paths == ["Sources/"])
+    }
+
+    @Test("Given --source-ref :0, when parsing, then captures the index ref unchanged")
+    func sourceRefIndexFlag() throws {
+        let result = try parser.parse(["swift-cpd", "--source-ref", ":0", "Sources/"])
+
+        #expect(result.sourceRef == ":0")
+    }
+
+    @Test("Given no --source-ref flag, when parsing, then sourceRef is nil")
+    func sourceRefDefaultNil() throws {
+        let result = try parser.parse(["swift-cpd", "Sources/"])
+
+        #expect(result.sourceRef == nil)
+    }
+
+    @Test("Given --source-ref without value, when parsing, then throws missingValue error")
+    func missingValueForSourceRefThrows() {
+        #expect(throws: ArgumentParsingError.missingValue("--source-ref")) {
+            try parser.parse(["swift-cpd", "--source-ref"])
+        }
+    }
 }

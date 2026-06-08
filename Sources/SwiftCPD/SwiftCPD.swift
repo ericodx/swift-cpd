@@ -59,11 +59,8 @@ struct SwiftCPD {
 extension SwiftCPD {
 
     private static func runAnalysis(_ configuration: Configuration) async throws -> ExitCode {
-        let discovery = SourceFileDiscovery(
-            crossLanguageEnabled: configuration.crossLanguageEnabled,
-            excludePatterns: configuration.excludePatterns
-        )
-        let files = try discovery.findSourceFiles(in: configuration.paths)
+        let sourceIO = try buildSourceIO(configuration: configuration)
+        let files = try sourceIO.lister.listFiles(in: configuration.paths)
 
         guard
             !files.isEmpty
@@ -72,7 +69,11 @@ extension SwiftCPD {
             return .configurationError
         }
 
-        let pipeline = buildPipeline(from: configuration)
+        let pipeline = buildPipeline(
+            from: configuration,
+            sourceReader: sourceIO.reader,
+            resolvedSha: sourceIO.resolvedSha
+        )
 
         let progressReporter = ProgressReporter(totalFiles: files.count)
 
@@ -97,7 +98,9 @@ extension SwiftCPD {
             totalTokens: pipelineResult.totalTokens,
             minimumTokenCount: configuration.minimumTokenCount,
             minimumLineCount: configuration.minimumLineCount,
-            filteredCloneCount: filteredCloneCount
+            filteredCloneCount: filteredCloneCount,
+            sourceRef: configuration.sourceRef,
+            resolvedSha: sourceIO.resolvedSha
         )
 
         switch configuration.baselineMode {
@@ -169,7 +172,9 @@ extension SwiftCPD {
             totalTokens: result.totalTokens,
             minimumTokenCount: result.minimumTokenCount,
             minimumLineCount: result.minimumLineCount,
-            filteredCloneCount: result.filteredCloneCount
+            filteredCloneCount: result.filteredCloneCount,
+            sourceRef: result.sourceRef,
+            resolvedSha: result.resolvedSha
         )
 
         let reporter = makeReporter(configuration.outputFormat)
@@ -191,24 +196,66 @@ extension SwiftCPD {
 
 extension SwiftCPD {
 
-    private static func buildPipeline(from configuration: Configuration) -> AnalysisPipeline {
+    private static func buildPipeline(
+        from configuration: Configuration,
+        sourceReader: any SourceReader,
+        resolvedSha: String?
+    ) -> AnalysisPipeline {
         AnalysisPipeline(
-            minimumTokenCount: configuration.minimumTokenCount,
-            minimumLineCount: configuration.minimumLineCount,
+            detection: AnalysisPipeline.DetectionOptions(
+                minimumTokenCount: configuration.minimumTokenCount,
+                minimumLineCount: configuration.minimumLineCount,
+                thresholds: DetectionThresholds(
+                    type3Similarity: configuration.type3Similarity,
+                    type3TileSize: configuration.type3TileSize,
+                    type3CandidateThreshold: configuration.type3CandidateThreshold,
+                    type4Similarity: configuration.type4Similarity
+                ),
+                enabledCloneTypes: configuration.enabledCloneTypes,
+                crossLanguageEnabled: configuration.crossLanguageEnabled,
+                inlineSuppressionTag: configuration.inlineSuppressionTag
+            ),
             cache: AnalysisPipeline.CacheOptions(
                 directory: configuration.cacheDirectory,
                 disabled: configuration.noCache
             ),
-            crossLanguageEnabled: configuration.crossLanguageEnabled,
-            thresholds: DetectionThresholds(
-                type3Similarity: configuration.type3Similarity,
-                type3TileSize: configuration.type3TileSize,
-                type3CandidateThreshold: configuration.type3CandidateThreshold,
-                type4Similarity: configuration.type4Similarity
-            ),
-            inlineSuppressionTag: configuration.inlineSuppressionTag,
-            enabledCloneTypes: configuration.enabledCloneTypes
+            source: AnalysisPipeline.SourceOptions(
+                reader: sourceReader,
+                resolvedSha: resolvedSha
+            )
         )
+    }
+
+    private static func buildSourceIO(
+        configuration: Configuration
+    ) throws -> (lister: any SourceFileLister, reader: any SourceReader, resolvedSha: String?) {
+        guard
+            let sourceRef = configuration.sourceRef
+        else {
+            let lister = FilesystemSourceFileLister(
+                crossLanguageEnabled: configuration.crossLanguageEnabled,
+                excludePatterns: configuration.excludePatterns
+            )
+            return (lister, WorkingTreeSourceReader(), nil)
+        }
+
+        let resolved = try GitRefResolver().resolve(
+            ref: sourceRef,
+            in: FileManager.default.currentDirectoryPath
+        )
+        let lister = GitRefSourceFileLister(
+            ref: sourceRef,
+            resolvedSha: resolved.resolvedSha,
+            repositoryRoot: resolved.repositoryRoot,
+            crossLanguageEnabled: configuration.crossLanguageEnabled,
+            excludePatterns: configuration.excludePatterns
+        )
+        let reader = GitRefSourceReader(
+            ref: sourceRef,
+            resolvedSha: resolved.resolvedSha,
+            repositoryRoot: resolved.repositoryRoot
+        )
+        return (lister, reader, resolved.resolvedSha)
     }
 
     private static func filterCloneGroups(

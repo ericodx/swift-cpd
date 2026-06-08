@@ -20,6 +20,7 @@ struct Configuration: Sendable {
     let ignoreStructural: Bool
     let cacheDirectory: String
     let noCache: Bool
+    let sourceRef: String?
 }
 
 extension Configuration {
@@ -51,23 +52,34 @@ extension Configuration {
         self.cacheDirectory = parsed.cacheDirectory ?? ".swift-cpd-cache"
         self.noCache = parsed.noCache || yaml?.noCache ?? false
 
+        let rawSourceRef = parsed.sourceRef ?? yaml?.sourceRef
+        self.sourceRef = rawSourceRef?.isEmpty == true ? nil : rawSourceRef
+
         let yamlTypes = yaml?.enabledCloneTypes.map { Set($0.compactMap { CloneType(rawValue: $0) }) }
         self.enabledCloneTypes = parsed.enabledCloneTypes ?? yamlTypes ?? Set(CloneType.allCases)
 
         let yamlFormat = yaml?.outputFormat.flatMap { OutputFormat(rawValue: $0) }
         self.outputFormat = parsed.format ?? yamlFormat ?? .text
 
-        if parsed.baselineGenerate {
-            self.baselineMode = .generate
-        } else if parsed.baselineUpdate {
-            self.baselineMode = .update
-        } else if parsed.baselineFilePath != nil {
-            self.baselineMode = .compare
-        } else {
-            self.baselineMode = .none
-        }
+        self.baselineMode = Self.resolveBaselineMode(from: parsed)
 
         try validate()
+    }
+
+    private static func resolveBaselineMode(from parsed: ParsedArguments) -> BaselineMode {
+        switch (parsed.baselineGenerate, parsed.baselineUpdate, parsed.baselineFilePath) {
+        case (true, _, _):
+            return .generate
+
+        case (_, true, _):
+            return .update
+
+        case (_, _, .some):
+            return .compare
+
+        default:
+            return .none
+        }
     }
 }
 

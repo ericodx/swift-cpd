@@ -25,11 +25,22 @@ struct SourcePathDiscovery {
         var paths: [String] = []
 
         for name in contents.sorted() {
-            guard !name.hasPrefix("."), !Self.excluded.contains(name) else { continue }
+            guard
+                !name.hasPrefix("."),
+                !Self.excluded.contains(name)
+            else {
+                continue
+            }
 
             let fullPath = "\(rootPath)/\(name)"
             var isDir: ObjCBool = false
-            guard fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue else { continue }
+
+            guard
+                fileManager.fileExists(atPath: fullPath, isDirectory: &isDir),
+                isDir.boolValue
+            else {
+                continue
+            }
 
             if directoryContainsSwiftFiles(fullPath) {
                 paths.append("\(name)/")

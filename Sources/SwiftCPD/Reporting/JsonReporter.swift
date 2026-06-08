@@ -63,7 +63,9 @@ extension JsonReporter {
             clones: jsonClones,
             metadata: metadata,
             summary: summary,
-            version: "1.0.0"
+            version: "1.0.0",
+            sourceRef: result.sourceRef,
+            resolvedSha: result.resolvedSha
         )
     }
 
@@ -72,7 +74,11 @@ extension JsonReporter {
 
         for clone in clones {
             for fragment in clone.fragments {
-                guard cache[fragment.file] == nil else { continue }
+                guard
+                    cache[fragment.file] == nil
+                else {
+                    continue
+                }
 
                 if let content = try? String(contentsOfFile: fragment.file, encoding: .utf8) {
                     cache[fragment.file] = content.components(separatedBy: "\n")

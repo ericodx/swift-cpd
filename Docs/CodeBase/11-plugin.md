@@ -1,6 +1,6 @@
 # Plugin
 
-← [Cache & Baseline](10-cache-baseline.md) | [Next: Index →](README.md)
+← [Cache & Baseline](10-cache-baseline.md) | Next: [Source IO (Git Refs) →](12-source-io.md)
 
 ---
 
@@ -70,4 +70,4 @@ Add to a target via:
 
 ---
 
-← [Cache & Baseline](10-cache-baseline.md) | [Next: Index →](README.md)
+← [Cache & Baseline](10-cache-baseline.md) | Next: [Source IO (Git Refs) →](12-source-io.md)

@@ -16,7 +16,9 @@
 
 ```
 swift-cpd [options] <paths>
-swift-cpd init # generate .swift-cpd.yml
+swift-cpd init                      # generate .swift-cpd.yml
+swift-cpd --source-ref HEAD <paths> # analyze the last committed state
+swift-cpd --source-ref :0   <paths> # analyze the staged blobs (index)
 ```
 
 **Exit codes:** `0` success · `1` clones detected · `2` configuration error · `3` analysis error

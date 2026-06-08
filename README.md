@@ -5,7 +5,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/ericodx/swift-cpd/main-analysis.yml?branch=main&style=flat-square&logo=github&logoColor=white&label=CI&color=4CAF50)](https://github.com/ericodx/swift-cpd/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ericodx-swift-cpd&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ericodx-swift-cpd)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ericodx-swift-cpd&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ericodx-swift-cpd)
-![mutation score](https://img.shields.io/badge/mutation%20score-91.4%25-lightgray?logo=jest&logoColor=white)
+![mutation score](https://img.shields.io/badge/mutation%20score-89.7%25-lightgray?logo=jest&logoColor=white)
 
 **Detect and eliminate duplicated logic in Swift and Objective-C/C codebases to improve maintainability and code quality.**
 
@@ -79,6 +79,18 @@ exclude:
 ```
 
 Full reference in the [Usage & Configuration Guide](Docs/USAGE.md).
+
+## Analyze a git ref instead of the working tree
+
+Use `--source-ref` to read source files from a git ref (branch, sha, `HEAD`, or `:0` for the index) instead of the working tree. The primary motivation is `pre-commit` integration — running against `:0` analyzes exactly what is about to be committed, side-stepping the Frankenstein working tree produced by `git commit --only`.
+
+```bash
+swift-cpd --source-ref HEAD Sources/    # last committed state
+swift-cpd --source-ref :0   Sources/    # the index (staged blobs)
+swift-cpd --source-ref main Sources/    # a branch tip
+```
+
+See [Reading from a git ref](Docs/USAGE.md#reading-from-a-git-ref---source-ref) for pre-commit recipes and caveats.
 
 ## Documentation
 

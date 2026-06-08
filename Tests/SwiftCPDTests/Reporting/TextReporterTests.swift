@@ -223,4 +223,67 @@ struct TextReporterTests {
         #expect(output.contains("Type-1"))
         #expect(output.contains("Type-2"))
     }
+
+    @Test("Given sourceRef set, when reporting clones, then header contains the ref (R1)")
+    func headerShowsRefWithClones() {
+        let clone = CloneGroup(
+            type: .type1,
+            tokenCount: 60,
+            lineCount: 6,
+            similarity: 100.0,
+            fragments: [
+                CloneFragment(file: "A.swift", startLine: 10, endLine: 15, startColumn: 1, endColumn: 1),
+                CloneFragment(file: "B.swift", startLine: 20, endLine: 25, startColumn: 1, endColumn: 1),
+            ]
+        )
+        let result = AnalysisResult(
+            cloneGroups: [clone],
+            filesAnalyzed: 4,
+            executionTime: 0.42,
+            totalTokens: 200,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            sourceRef: "HEAD"
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("at HEAD"))
+        #expect(output.contains("Found 1 clone(s) in 4 files (at HEAD, 0.42s)"))
+    }
+
+    @Test("Given sourceRef set with no clones, when reporting, then no-clones message includes the ref")
+    func headerShowsRefWithNoClones() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 7,
+            executionTime: 0.10,
+            totalTokens: 100,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            sourceRef: ":0"
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("at :0"))
+        #expect(output.contains("No clones detected in 7 files (at :0, 0.10s)"))
+    }
+
+    @Test("Given no sourceRef, when reporting, then header omits the at-ref segment")
+    func headerOmitsRefWhenAbsent() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 3,
+            executionTime: 0.05,
+            totalTokens: 50,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+
+        #expect(!output.contains("at "))
+        #expect(output.contains("No clones detected in 3 files (0.05s)"))
+    }
 }

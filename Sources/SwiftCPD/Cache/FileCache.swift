@@ -2,16 +2,20 @@ import Foundation
 
 actor FileCache {
 
-    init(encoder: @escaping @Sendable ([String: CacheEntry]) throws -> Data = { try JSONEncoder().encode($0) }) {
+    init(
+        encoder: @escaping @Sendable (Envelope) throws -> Data = { try JSONEncoder().encode($0) }
+    ) {
         self.encoder = encoder
     }
 
-    private var entries: [String: CacheEntry] = [:]
-    private let encoder: @Sendable ([String: CacheEntry]) throws -> Data
+    static let currentSchemaVersion = 2
 
-    func lookup(file: String, contentHash: String) -> CacheEntry? {
+    private var entries: [String: CacheEntry] = [:]
+    private let encoder: @Sendable (Envelope) throws -> Data
+
+    func lookup(key: CacheKey, contentHash: String) -> CacheEntry? {
         guard
-            let entry = entries[file],
+            let entry = entries[key.encoded],
             entry.contentHash == contentHash
         else {
             return nil
@@ -20,33 +24,39 @@ actor FileCache {
         return entry
     }
 
-    func store(file: String, entry: CacheEntry) {
-        entries[file] = entry
+    func store(key: CacheKey, entry: CacheEntry) {
+        entries[key.encoded] = entry
     }
 
     func load(from directory: String) async {
         let fileURL = URL(fileURLWithPath: directory).appendingPathComponent("cache.json")
 
-        let decoded: [String: CacheEntry]? = await Task.detached(priority: .utility) {
+        let decoded: Envelope? = await Task.detached(priority: .utility) {
             guard
                 FileManager.default.fileExists(atPath: fileURL.path),
                 let data = try? Data(contentsOf: fileURL),
-                let result = try? JSONDecoder().decode([String: CacheEntry].self, from: data)
+                let envelope = try? JSONDecoder().decode(Envelope.self, from: data),
+                envelope.schemaVersion == FileCache.currentSchemaVersion
             else {
                 return nil
             }
 
-            return result
+            return envelope
         }.value
 
         if let decoded {
-            entries = decoded
+            entries = decoded.entries
         }
     }
 
     func save(to directory: String) async {
+        let envelope = Envelope(
+            schemaVersion: Self.currentSchemaVersion,
+            entries: entries
+        )
+
         guard
-            let data = try? encoder(entries)
+            let data = try? encoder(envelope)
         else {
             return
         }

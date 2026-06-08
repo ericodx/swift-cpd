@@ -1,14 +1,14 @@
 struct ArgumentParser: Sendable {
 
-    private let booleanFlags: Set<String> = [
-        "--version",
-        "--help",
-        "--baseline-generate",
-        "--baseline-update",
-        "--cross-language",
-        "--ignore-same-file",
-        "--ignore-structural",
-        "--no-cache",
+    private static let booleanFlagKeyPaths: [String: WritableKeyPath<ParsedArguments, Bool> & Sendable] = [
+        "--version": \.showVersion,
+        "--help": \.showHelp,
+        "--baseline-generate": \.baselineGenerate,
+        "--baseline-update": \.baselineUpdate,
+        "--cross-language": \.crossLanguageEnabled,
+        "--ignore-same-file": \.ignoreSameFile,
+        "--ignore-structural": \.ignoreStructural,
+        "--no-cache": \.noCache,
     ]
 
     func parse(_ arguments: [String]) throws -> ParsedArguments {
@@ -48,32 +48,12 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        if booleanFlags.contains(flag) {
-            applyBooleanFlag(flag, to: &result)
+        if let keyPath = Self.booleanFlagKeyPaths[flag] {
+            result[keyPath: keyPath] = true
             return
         }
 
         try applyValueFlag(flag, to: &result, at: &index, in: args)
-    }
-
-    private func applyBooleanFlag(_ flag: String, to result: inout ParsedArguments) {
-        if flag == "--version" {
-            result.showVersion = true
-        } else if flag == "--help" {
-            result.showHelp = true
-        } else if flag == "--baseline-generate" {
-            result.baselineGenerate = true
-        } else if flag == "--baseline-update" {
-            result.baselineUpdate = true
-        } else if flag == "--cross-language" {
-            result.crossLanguageEnabled = true
-        } else if flag == "--ignore-same-file" {
-            result.ignoreSameFile = true
-        } else if flag == "--ignore-structural" {
-            result.ignoreStructural = true
-        } else if flag == "--no-cache" {
-            result.noCache = true
-        }
     }
 
     private func applyValueFlag(
@@ -136,6 +116,9 @@ extension ArgumentParser {
         case "--types":
             result.enabledCloneTypes = try requireCloneTypes(for: flag, at: &index, in: args)
 
+        case "--source-ref":
+            result.sourceRef = try requireValue(for: flag, at: &index, in: args)
+
         default:
             throw ArgumentParsingError.unknownFlag(flag)
         }
@@ -147,13 +130,17 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        if flag == "--type3-similarity" {
+        switch flag {
+        case "--type3-similarity":
             result.type3Similarity = try requireInteger(for: flag, at: &index, in: args)
-        } else if flag == "--type3-tile-size" {
+
+        case "--type3-tile-size":
             result.type3TileSize = try requireInteger(for: flag, at: &index, in: args)
-        } else if flag == "--type3-candidate-threshold" {
+
+        case "--type3-candidate-threshold":
             result.type3CandidateThreshold = try requireInteger(for: flag, at: &index, in: args)
-        } else {
+
+        default:
             throw ArgumentParsingError.unknownFlag(flag)
         }
     }
@@ -164,11 +151,13 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        if flag == "--type4-similarity" {
-            result.type4Similarity = try requireInteger(for: flag, at: &index, in: args)
-        } else {
+        guard
+            flag == "--type4-similarity"
+        else {
             throw ArgumentParsingError.unknownFlag(flag)
         }
+
+        result.type4Similarity = try requireInteger(for: flag, at: &index, in: args)
     }
 
     private func requireValue(for flag: String, at index: inout Int, in args: [String]) throws -> String {

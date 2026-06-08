@@ -16,4 +16,5 @@ struct YamlConfiguration: Sendable, Equatable {
     let ignoreSameFile: Bool?
     let ignoreStructural: Bool?
     let noCache: Bool?
+    let sourceRef: String?
 }

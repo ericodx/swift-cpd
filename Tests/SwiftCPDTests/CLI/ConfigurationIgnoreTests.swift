@@ -24,7 +24,8 @@ struct ConfigurationIgnoreTests {
             enabledCloneTypes: nil,
             ignoreSameFile: true,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -52,7 +53,8 @@ struct ConfigurationIgnoreTests {
             enabledCloneTypes: nil,
             ignoreSameFile: false,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -79,7 +81,8 @@ struct ConfigurationIgnoreTests {
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
             ignoreStructural: true,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -107,7 +110,8 @@ struct ConfigurationIgnoreTests {
             enabledCloneTypes: nil,
             ignoreSameFile: nil,
             ignoreStructural: false,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -152,7 +156,8 @@ struct ConfigurationIgnoreTests {
             enabledCloneTypes: [1, 2],
             ignoreSameFile: nil,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)
@@ -180,7 +185,8 @@ struct ConfigurationIgnoreTests {
             enabledCloneTypes: [1, 2],
             ignoreSameFile: nil,
             ignoreStructural: nil,
-            noCache: nil
+            noCache: nil,
+            sourceRef: nil
         )
 
         let config = try Configuration(from: parsed, yaml: yaml)

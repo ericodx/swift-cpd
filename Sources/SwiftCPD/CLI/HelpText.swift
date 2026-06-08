@@ -31,6 +31,10 @@ enum HelpText {
           --ignore-structural    Ignore Type-3 and Type-4 clones (structural similarity)
           --no-cache               Disable caching of tokenization results
           --cross-language       Enable cross-language detection (Swift + Objective-C/C)
+          --source-ref <ref>     Read source files from the given git ref instead of the working
+                                 tree. Accepts any ref understood by git rev-parse (branch, tag,
+                                 sha, HEAD, HEAD~1, :0 for the index). When set, working-tree
+                                 contents are ignored.
           --version              Show version information
           --help                 Show this help message
         """

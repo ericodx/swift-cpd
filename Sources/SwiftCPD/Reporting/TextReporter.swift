@@ -3,11 +3,12 @@ struct TextReporter: Reporter {
     func report(_ result: AnalysisResult) -> String {
         let clones = result.sortedCloneGroups
         let timeFormatted = String(format: "%.2f", result.executionTime)
+        let refSuffix = result.sourceRef.map { "at \($0), " } ?? ""
 
         guard
             !clones.isEmpty
         else {
-            var message = "No clones detected in \(result.filesAnalyzed) files (\(timeFormatted)s)"
+            var message = "No clones detected in \(result.filesAnalyzed) files (\(refSuffix)\(timeFormatted)s)"
 
             if result.filteredCloneCount > 0 {
                 message += " (\(result.filteredCloneCount) clone(s) filtered by configuration)"
@@ -17,7 +18,7 @@ struct TextReporter: Reporter {
         }
 
         var lines: [String] = []
-        lines.append("Found \(clones.count) clone(s) in \(result.filesAnalyzed) files (\(timeFormatted)s)")
+        lines.append("Found \(clones.count) clone(s) in \(result.filesAnalyzed) files (\(refSuffix)\(timeFormatted)s)")
 
         for (index, clone) in clones.enumerated() {
             lines.append("")

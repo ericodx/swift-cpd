@@ -16,16 +16,38 @@ Orchestrates file loading, tokenization, and detection. The entry point for ever
 
 ```swift
 init(
-    minimumTokenCount: Int = 50,
-    minimumLineCount: Int = 5,
-    cacheDirectory: String = ".swift-cpd-cache",
-    noCache: Bool = false,
-    crossLanguageEnabled: Bool = false,
-    thresholds: DetectionThresholds = .defaults,
-    inlineSuppressionTag: String = "swiftcpd:ignore",
-    enabledCloneTypes: Set<CloneType> = Set(CloneType.allCases)
+    detection: DetectionOptions = DetectionOptions(),
+    cache: CacheOptions = CacheOptions(directory: ".swift-cpd-cache"),
+    source: SourceOptions = SourceOptions()
 )
 ```
+
+All initialization parameters are grouped into three nested value types — each lives in its own file. Defaults preserve the working-tree, no-source-ref behavior.
+
+```swift
+struct AnalysisPipeline.DetectionOptions: Sendable
+var minimumTokenCount: Int = 50
+var minimumLineCount: Int = 5
+var thresholds: DetectionThresholds = .defaults
+var enabledCloneTypes: Set<CloneType> = Set(CloneType.allCases)
+var crossLanguageEnabled: Bool = false
+var inlineSuppressionTag: String = "swiftcpd:ignore"
+```
+
+```swift
+struct AnalysisPipeline.CacheOptions: Sendable
+var directory: String              // required, no default
+var disabled: Bool = false         // set true to bypass cache entirely
+```
+
+```swift
+struct AnalysisPipeline.SourceOptions: Sendable
+init(reader: any SourceReader = WorkingTreeSourceReader(), resolvedSha: String? = nil)
+var reader: any SourceReader
+var resolvedSha: String?           // when non-nil, namespaces cache entries by this sha
+```
+
+When `resolvedSha` is non-nil, `tokenizeFile` builds the cache key as `CacheKey(file:, resolvedSha:)` so concurrent runs against different refs do not collide. See [Cache & Baseline](10-cache-baseline.md) for the on-disk envelope.
 
 ### Method
 
@@ -39,12 +61,14 @@ The method is `async` because file loading is parallelized with Swift concurrenc
 
 ```mermaid
 flowchart TD
-    A["analyze(files:)"] --> NCC{noCache?}
+    A["analyze(files:)"] --> NCC{cache.disabled?}
     NCC -- no --> B["FileCache.load(from:)"]
     NCC -- yes --> C
     B --> C["async let per file"]
-    C --> D["FileHasher.hash"]
-    D --> E{Cache hit?}
+    C --> SR["source.reader.read(file:)"]
+    SR --> D["FileHasher.hash(data:)"]
+    D --> KEY["CacheKey(file:, resolvedSha: source.resolvedSha)"]
+    KEY --> E{Cache hit?}
     E -- yes --> F["CacheEntry → FileTokens"]
     E -- no --> G["SwiftTokenizer or CTokenizer"]
     G --> H["SuppressionScanner"]
@@ -56,7 +80,7 @@ flowchart TD
     L --> M["FileCache.save(to:)"]
     L --> N["Enabled detectors (sequential)"]
     N --> O["Merge CloneGroups"]
-    O --> P["Sort by type → file → startLine"]
+    O --> P["compareCloneGroups: type → file → startLine"]
     P --> Q["PipelineResult"]
 ```
 

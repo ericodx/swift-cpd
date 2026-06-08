@@ -137,4 +137,57 @@ struct HtmlReporterTests {
         #expect(output.contains("No clones detected"))
         #expect(output.contains("3 clone(s) filtered by configuration"))
     }
+
+    @Test("Given sourceRef set, when reporting, then summary header contains the ref")
+    func headerShowsRefWhenSet() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 4,
+            executionTime: 0.42,
+            totalTokens: 200,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            sourceRef: "HEAD"
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("at HEAD"))
+        #expect(output.contains("0 clone(s) found in 4 files (at HEAD, 0.42s)"))
+    }
+
+    @Test("Given no sourceRef, when reporting, then summary header omits the at-ref segment")
+    func headerOmitsRefWhenAbsent() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 3,
+            executionTime: 0.05,
+            totalTokens: 50,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+
+        #expect(output.contains("0 clone(s) found in 3 files (0.05s)"))
+        #expect(!output.contains("at "))
+    }
+
+    @Test("Given sourceRef with HTML-meaningful chars, when reporting, then header escapes them")
+    func headerEscapesRef() {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 1,
+            executionTime: 0.01,
+            totalTokens: 10,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            sourceRef: "feature/<script>"
+        )
+
+        let output = reporter.report(result)
+
+        #expect(!output.contains("<script>"))
+        #expect(output.contains("&lt;script&gt;"))
+    }
 }

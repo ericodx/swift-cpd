@@ -369,4 +369,46 @@ struct JsonReporterTests {
 
         #expect(summary["duplicationPercentage"] as? Double == 10.0)
     }
+
+    @Test("Given sourceRef and resolvedSha set, when reporting, then both appear at top level (R2)")
+    func refFieldsPresentInJson() throws {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 3,
+            executionTime: 0.2,
+            totalTokens: 200,
+            minimumTokenCount: 50,
+            minimumLineCount: 5,
+            sourceRef: "HEAD",
+            resolvedSha: "abc1234"
+        )
+
+        let output = reporter.report(result)
+        let data = try #require(output.data(using: .utf8))
+        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(json["sourceRef"] as? String == "HEAD")
+        #expect(json["resolvedSha"] as? String == "abc1234")
+    }
+
+    @Test("Given no sourceRef, when reporting, then ref fields are omitted (R3)")
+    func refFieldsAbsentByDefault() throws {
+        let result = AnalysisResult(
+            cloneGroups: [],
+            filesAnalyzed: 3,
+            executionTime: 0.2,
+            totalTokens: 200,
+            minimumTokenCount: 50,
+            minimumLineCount: 5
+        )
+
+        let output = reporter.report(result)
+        let data = try #require(output.data(using: .utf8))
+        let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(json["sourceRef"] == nil)
+        #expect(json["resolvedSha"] == nil)
+        #expect(!output.contains("\"sourceRef\""))
+        #expect(!output.contains("\"resolvedSha\""))
+    }
 }

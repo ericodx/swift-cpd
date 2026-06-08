@@ -9,12 +9,13 @@ This guide covers every way to run and configure `swift-cpd`, from a first run t
 1. [Quick Start](#quick-start)
 2. [Configuration File](#configuration-file)
 3. [CLI Reference](#cli-reference)
-4. [Output Formats](#output-formats)
-5. [Baseline Workflow](#baseline-workflow)
-6. [Inline Suppression](#inline-suppression)
-7. [CI/CD Integration](#cicd-integration)
-8. [Xcode & SPM Plugin](#xcode--spm-plugin)
-9. [Exit Codes](#exit-codes)
+4. [Reading from a git ref (--source-ref)](#reading-from-a-git-ref---source-ref)
+5. [Output Formats](#output-formats)
+6. [Baseline Workflow](#baseline-workflow)
+7. [Inline Suppression](#inline-suppression)
+8. [CI/CD Integration](#cicd-integration)
+9. [Xcode & SPM Plugin](#xcode--spm-plugin)
+10. [Exit Codes](#exit-codes)
 
 ---
 
@@ -157,6 +158,14 @@ inlineSuppressionTag: swiftcpd:ignore
 # Exit with code 1 if the duplication percentage exceeds this value.
 # Remove this key to disable the quality gate.
 maxDuplication: 5.0
+
+# ── Git ref source ────────────────────────────────────────────────────────────
+
+# Read source files from the given git ref instead of the working tree.
+# Accepts any ref understood by `git rev-parse`: branch, tag, sha,
+# HEAD, HEAD~1, or `:0` for the index (staged blobs).
+# Omit or leave empty to read the working tree (default).
+# sourceRef: HEAD
 ```
 
 ### Precedence
@@ -217,6 +226,7 @@ Paths on the CLI override `paths:` in the YAML file. When no paths are given, th
 | `--baseline-update` | — | — | Overwrite existing baseline |
 | `--baseline <path>` | `.swift-cpd-baseline.json` | — | Compare against baseline at path |
 | `--config <path>` | `.swift-cpd.yml` | — | Use a specific config file |
+| `--source-ref <ref>` | — | git ref | Read sources from a git ref (see below) |
 
 ### Common invocations
 
@@ -248,6 +258,84 @@ swift-cpd --max-duplication 3 Sources/
 # Run without cache (useful after changing detection rules)
 swift-cpd --no-cache Sources/
 ```
+
+---
+
+## Reading from a git ref (`--source-ref`)
+
+By default `swift-cpd` reads files from the working tree. Use `--source-ref <ref>` (or `sourceRef:` in YAML) to read file contents from a git ref instead. When set, the working tree is ignored — listing, hashing, tokenization, and inline suppression all operate on the blob contents at that ref.
+
+```bash
+# Last commit
+swift-cpd --source-ref HEAD Sources/
+
+# Index (about-to-be-committed blobs)
+swift-cpd --source-ref :0 Sources/
+
+# A specific branch or sha
+swift-cpd --source-ref feature/cleanup Sources/
+swift-cpd --source-ref a1b2c3d Sources/
+```
+
+### When to use it
+
+The main motivation is **`pre-commit` hooks under `git commit --only`**. In that mode, `pre-commit` stashes the working tree with `--keep-index`, producing a Frankenstein state where files in the pathspec hold their new versions while everything else reverts to `HEAD`. Running `swift-cpd` against that working tree can report duplications that don't exist in either the pre-commit or post-commit state.
+
+Two recipes that side-step this:
+
+```yaml
+# .pre-commit-config.yaml — analyze what's about to be committed (preferred)
+- repo: https://github.com/ericodx/swift-cpd
+  hooks:
+    - id: swift-cpd
+      args: [--source-ref, ":0"]
+```
+
+```yaml
+# Or run in a post-commit stage against the last commit
+- repo: https://github.com/ericodx/swift-cpd
+  hooks:
+    - id: swift-cpd
+      stages: [post-commit]
+      args: [--source-ref, HEAD]
+```
+
+### Requirements & behavior notes
+
+- **`git` must be on `PATH`.** `swift-cpd` shells out to `git rev-parse`, `git ls-tree`/`ls-files`, and `git cat-file`. A missing executable produces a clear error.
+- **Reads the canonical blob bytes.** Smudge filters (`core.autocrlf`, `ident`, custom clean/smudge) are *not* applied. If the working tree differs from the blob due to those filters, that divergence is intentional with `--source-ref`.
+- **Submodules are skipped** with a warning to stderr — their tree entries point at a commit, not source content.
+- **Empty `--source-ref ""` is treated as unset** (reads the working tree).
+- **Cache is namespaced by resolved sha.** Mutable refs like `HEAD` or `main` reuse the cache across runs as long as the underlying sha is unchanged. When the ref moves, the cache misses for that file.
+
+### Output additions
+
+When `--source-ref` is set, reports surface the ref in their header:
+
+- **text**: header reads `Found N clone(s) in M files (at <ref>, T s)` (or the equivalent no-clones message). Without `--source-ref` the header is unchanged: `Found N clone(s) in M files (T s)`.
+- **html**: the summary paragraph mirrors the text format and includes `at <ref>` when set. The ref is HTML-escaped before being rendered.
+- **json**: two extra top-level keys appear next to `clones`, `metadata`, `summary`, `version`:
+  ```json
+  {
+    "sourceRef": "HEAD",
+    "resolvedSha": "a1b2c3d4…",
+    "clones": [ ... ],
+    ...
+  }
+  ```
+  Both keys are **omitted entirely** when `--source-ref` is absent — existing JSON consumers are unaffected.
+
+> **Note about `--format xcode`.** The Xcode format is designed for the SPM/Xcode build plugin, which runs against the working tree. Combining `--format xcode` with `--source-ref` produces warnings whose `file:line` come from the **blob**, but Xcode opens the corresponding **working-tree** file when you click them. If the working tree and the ref have diverged, the line shown may not contain the flagged code. Prefer `--format text` or `--format json` when analyzing a specific ref.
+
+### Errors you may see
+
+| Message | Cause |
+|---|---|
+| `notARepository(...)` | Current directory is not inside a git repo |
+| `unknownRef(ref: "...")` | `git rev-parse --verify` rejected the ref |
+| `gitExecutableNotFound` | `git` is not on PATH |
+| `pathDoesNotExistInRef(...)` | A `paths:` entry has no matches in the ref's tree |
+| `pathOutsideRepository(...)` | A path points outside the repository root |
 
 ---
 

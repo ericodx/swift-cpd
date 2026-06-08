@@ -284,4 +284,25 @@ struct YamlConfigurationParserTests {
         #expect(config.exclude == [])
         #expect(config.enabledCloneTypes == [1, 2])
     }
+
+    @Test("Given sourceRef scalar, when parsing, then decodes the ref unchanged")
+    func sourceRefScalar() throws {
+        let config = try parser.parse("sourceRef: HEAD")
+
+        #expect(config.sourceRef == "HEAD")
+    }
+
+    @Test("Given sourceRef set to :0, when parsing, then preserves the index syntax")
+    func sourceRefIndex() throws {
+        let config = try parser.parse("sourceRef: \":0\"")
+
+        #expect(config.sourceRef == ":0")
+    }
+
+    @Test("Given no sourceRef key, when parsing, then sourceRef is nil")
+    func sourceRefAbsent() throws {
+        let config = try parser.parse("minimumTokenCount: 50")
+
+        #expect(config.sourceRef == nil)
+    }
 }

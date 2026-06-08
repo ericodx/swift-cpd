@@ -17,30 +17,54 @@ actor FileCache
 An `actor` that owns the in-memory entry map and serializes all reads and writes. I/O operations are offloaded to `Task.detached` to avoid blocking the actor's executor while the caller awaits.
 
 ```swift
-init(encoder: @escaping @Sendable ([String: CacheEntry]) throws -> Data = { try JSONEncoder().encode($0) })
+init(encoder: @escaping @Sendable (Envelope) throws -> Data = { try JSONEncoder().encode($0) })
 ```
 
 The `encoder` parameter is injectable for testing.
 
 ```swift
-func lookup(file: String, contentHash: String) -> CacheEntry?
+func lookup(key: CacheKey, contentHash: String) -> CacheEntry?
 ```
-Returns a cached entry if `file` is known **and** its stored `contentHash` matches the provided one. A hash mismatch means the file was modified — returns `nil`, triggering fresh tokenization.
+Returns a cached entry if `key` is known **and** its stored `contentHash` matches the provided one. A hash mismatch means the file was modified — returns `nil`, triggering fresh tokenization.
 
 ```swift
-func store(file: String, entry: CacheEntry)
+func store(key: CacheKey, entry: CacheEntry)
 ```
 Writes a new entry into the in-memory map (no disk write here).
 
 ```swift
 func load(from directory: String) async
 ```
-Reads `<directory>/cache.json` from disk (on a detached task) and merges the decoded entries into the actor's state.
+Reads `<directory>/cache.json` from disk (on a detached task), decodes the envelope, and adopts its `entries` map into the actor's state — but only if `schemaVersion` matches the current schema. A mismatched version or decoding failure leaves the actor empty (cache is silently invalidated).
 
 ```swift
 func save(to directory: String) async
 ```
-Encodes the current state on the actor, then writes the JSON to disk on a detached task. Creates the directory if needed.
+Wraps the current entries in an `Envelope` with the current schema version, encodes it, then writes the JSON to disk on a detached task. Creates the directory if needed.
+
+### CacheKey
+
+```swift
+struct CacheKey: Hashable, Sendable
+let file:        String
+let resolvedSha: String?
+
+var encoded: String          // "<resolvedSha>|<file>" or "<file>" when resolvedSha is nil
+```
+
+The on-disk dictionary key. When `resolvedSha` is `nil`, the working-tree namespace is used (just the path). When a git ref is in play, the resolved SHA prefixes the path so multiple refs of the same file can coexist in the cache without collision.
+
+### Envelope (schema v2)
+
+```swift
+struct Envelope: Codable, Sendable
+let schemaVersion: Int
+let entries:       [String: CacheEntry]   // keyed by CacheKey.encoded
+```
+
+The cache file on disk is a single `Envelope`. Current `schemaVersion` is `2`.
+
+When `load` reads a file with a different `schemaVersion` — or with the legacy v1 flat-dictionary format — it discards the contents and starts empty. This is a deliberate **one-shot invalidation**: the next run pays one full tokenization pass, then steady state resumes. There is no migration path between schemas.
 
 ### CacheEntry
 
@@ -57,10 +81,10 @@ let normalizedTokens: [Token]      // after TokenNormalizer
 
 ```swift
 struct FileHasher: Sendable
-func hash(contentsOf filePath: String) throws -> String
+func hash(data: Data) -> String
 ```
 
-Reads the file at `filePath` and returns its **SHA-256** digest as a lowercase hex string. Used to detect content changes between runs.
+Returns the **SHA-256** digest of the input as a lowercase hex string. Used to detect content changes between runs. The pipeline hashes the bytes returned by `SourceReader.read(file:)` — the same call that produced the `Data` is reused, so no second filesystem read happens.
 
 ---
 

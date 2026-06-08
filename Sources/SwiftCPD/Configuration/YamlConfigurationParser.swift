@@ -13,12 +13,16 @@ struct YamlConfigurationParser: Sendable {
             let stripped = stripComment(line)
             let trimmed = stripped.trimmingCharacters(in: .whitespaces)
 
-            guard !trimmed.isEmpty else {
+            guard
+                !trimmed.isEmpty
+            else {
                 continue
             }
 
             if trimmed.hasPrefix("- ") {
-                guard let key = currentArrayKey else {
+                guard
+                    let key = currentArrayKey
+                else {
                     throw ParseError.invalid
                 }
 
@@ -32,7 +36,9 @@ struct YamlConfigurationParser: Sendable {
 
             currentArrayKey = nil
 
-            guard let colonIndex = trimmed.firstIndex(of: ":") else {
+            guard
+                let colonIndex = trimmed.firstIndex(of: ":")
+            else {
                 throw ParseError.invalid
             }
 
@@ -40,14 +46,18 @@ struct YamlConfigurationParser: Sendable {
             let rawValue = String(trimmed[trimmed.index(after: colonIndex)...])
                 .trimmingCharacters(in: .whitespaces)
 
-            if rawValue.isEmpty {
+            switch rawValue {
+            case "":
                 currentArrayKey = key
                 arrays[key] = []
-            } else if rawValue == "[]" {
+
+            case "[]":
                 arrays[key] = []
-            } else if rawValue.hasPrefix("[") {
+
+            case let value where value.hasPrefix("["):
                 throw ParseError.invalid
-            } else {
+
+            default:
                 scalars[key] = unquote(rawValue)
             }
         }
@@ -56,11 +66,15 @@ struct YamlConfigurationParser: Sendable {
     }
 
     private func stripComment(_ line: String) -> String {
-        guard !line.hasPrefix("#") else {
+        guard
+            !line.hasPrefix("#")
+        else {
             return ""
         }
 
-        guard let range = line.range(of: " #") else {
+        guard
+            let range = line.range(of: " #")
+        else {
             return line
         }
 
@@ -71,7 +85,10 @@ struct YamlConfigurationParser: Sendable {
         let isDoubleQuoted = value.hasPrefix("\"") && value.hasSuffix("\"")
         let isSingleQuoted = value.hasPrefix("'") && value.hasSuffix("'")
 
-        guard (isDoubleQuoted || isSingleQuoted) && value.count >= 2 else {
+        guard
+            isDoubleQuoted || isSingleQuoted,
+            value.count >= 2
+        else {
             return value
         }
 
@@ -98,16 +115,21 @@ struct YamlConfigurationParser: Sendable {
             enabledCloneTypes: try intArray(for: "enabledCloneTypes", in: arrays),
             ignoreSameFile: try boolValue(for: "ignoreSameFile", in: scalars),
             ignoreStructural: try boolValue(for: "ignoreStructural", in: scalars),
-            noCache: try boolValue(for: "noCache", in: scalars)
+            noCache: try boolValue(for: "noCache", in: scalars),
+            sourceRef: scalars["sourceRef"]
         )
     }
 
     private func intValue(for key: String, in scalars: [String: String]) throws -> Int? {
-        guard let raw = scalars[key] else {
+        guard
+            let raw = scalars[key]
+        else {
             return nil
         }
 
-        guard let value = Int(raw) else {
+        guard
+            let value = Int(raw)
+        else {
             throw ParseError.invalid
         }
 
@@ -115,11 +137,15 @@ struct YamlConfigurationParser: Sendable {
     }
 
     private func doubleValue(for key: String, in scalars: [String: String]) throws -> Double? {
-        guard let raw = scalars[key] else {
+        guard
+            let raw = scalars[key]
+        else {
             return nil
         }
 
-        guard let value = Double(raw) else {
+        guard
+            let value = Double(raw)
+        else {
             throw ParseError.invalid
         }
 
@@ -127,7 +153,9 @@ struct YamlConfigurationParser: Sendable {
     }
 
     private func boolValue(for key: String, in scalars: [String: String]) throws -> Bool? {
-        guard let raw = scalars[key] else {
+        guard
+            let raw = scalars[key]
+        else {
             return nil
         }
 
@@ -146,12 +174,16 @@ struct YamlConfigurationParser: Sendable {
     }
 
     private func intArray(for key: String, in arrays: [String: [String]]) throws -> [Int]? {
-        guard let items = arrays[key] else {
+        guard
+            let items = arrays[key]
+        else {
             return nil
         }
 
         return try items.map { raw in
-            guard let value = Int(raw) else {
+            guard
+                let value = Int(raw)
+            else {
                 throw ParseError.invalid
             }
 

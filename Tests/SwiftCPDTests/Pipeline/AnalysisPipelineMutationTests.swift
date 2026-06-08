@@ -38,8 +38,8 @@ struct AnalysisPipelineMutationTests {
         try source.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2, .type3]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1, .type2, .type3]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -65,8 +65,8 @@ struct AnalysisPipelineMutationTests {
         try standardDuplicateSource.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileB, fileA])
 
@@ -119,8 +119,8 @@ struct AnalysisPipelineMutationTests {
         try source.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1, .type2]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -197,7 +197,8 @@ struct AnalysisPipelineMutationTests {
         try cSource.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1, cache: .init(directory: cacheDir)
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -216,8 +217,8 @@ struct AnalysisPipelineMutationTests {
         try standardDuplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileZ, fileA])
 
@@ -254,8 +255,8 @@ struct AnalysisPipelineMutationTests {
         try swiftSource.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
@@ -273,8 +274,8 @@ struct AnalysisPipelineMutationTests {
         try standardDuplicateSource.write(toFile: fileA, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA])
 
@@ -309,8 +310,8 @@ struct AnalysisPipelineMutationTests {
         try source.write(toFile: fileB, atomically: true, encoding: .utf8)
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5, minimumLineCount: 1,
-            cache: .init(directory: cacheDir), enabledCloneTypes: [.type1, .type2]
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1, enabledCloneTypes: [.type1, .type2]),
+            cache: .init(directory: cacheDir)
         )
         let result = try await pipeline.analyze(files: [fileA, fileB])
 
