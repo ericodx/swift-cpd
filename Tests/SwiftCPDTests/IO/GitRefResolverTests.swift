@@ -65,6 +65,23 @@ struct GitRefResolverTests {
         #expect(resolved.resolvedSha != second)
     }
 
+    @Test("Given :0 (index), when resolving, then returns literal :0 as the resolved sha")
+    func resolvesIndex() throws {
+        let repo = try GitRepositoryFixture()
+        defer { repo.cleanup() }
+
+        try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
+        try repo.commit()
+
+        let resolved = try resolver.resolve(ref: ":0", in: repo.root)
+
+        #expect(resolved.resolvedSha == ":0")
+        #expect(
+            resolved.repositoryRoot.hasSuffix(
+                (repo.root as NSString).lastPathComponent
+            ))
+    }
+
     @Test("Given branch name, when resolving, then returns its tip sha")
     func resolvesBranch() throws {
         let repo = try GitRepositoryFixture()
