@@ -59,11 +59,11 @@ struct SwiftCPD {
 extension SwiftCPD {
 
     private static func runAnalysis(_ configuration: Configuration) async throws -> ExitCode {
-        let discovery = SourceFileDiscovery(
+        let lister = FilesystemSourceFileLister(
             crossLanguageEnabled: configuration.crossLanguageEnabled,
             excludePatterns: configuration.excludePatterns
         )
-        let files = try discovery.findSourceFiles(in: configuration.paths)
+        let files = try lister.listFiles(in: configuration.paths)
 
         guard
             !files.isEmpty
