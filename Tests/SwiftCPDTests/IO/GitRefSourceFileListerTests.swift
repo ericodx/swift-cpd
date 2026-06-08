@@ -153,6 +153,79 @@ struct GitRefSourceFileListerTests {
         #expect(captured.text.contains("submodule"))
     }
 
+    @Test("Given :0 with scoped path, when listing, then returns only files under that scope")
+    func indexListingWithScopedPath() throws {
+        let repo = try GitRepositoryFixture()
+        defer { repo.cleanup() }
+
+        try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
+        try repo.writeFile("Other/B.swift", content: "let b = 1\n")
+        try repo.commit()
+
+        let lister = makeGitRefSourceFileLister(
+            sha: ":0",
+            repoRoot: repo.root,
+            ref: ":0"
+        )
+        let files = try lister.listFiles(in: ["Sources"])
+
+        #expect(files.count == 1)
+        #expect(files[0].hasSuffix("Sources/A.swift"))
+    }
+
+    @Test("Given invalid sha, when listing, then throws gitCommandFailed with descriptive command string")
+    func invalidShaThrowsGitCommandFailed() throws {
+        let repo = try GitRepositoryFixture()
+        defer { repo.cleanup() }
+
+        try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
+        try repo.commit()
+
+        let lister = makeGitRefSourceFileLister(
+            sha: "0000000000000000000000000000000000000000",
+            repoRoot: repo.root,
+            ref: "bogus"
+        )
+
+        #expect {
+            _ = try lister.listFiles(in: ["Sources"])
+        } throws: { error in
+            guard
+                case SourceRefError.gitCommandFailed(let command, let exitCode, let stderr) = error
+            else {
+                return false
+            }
+            return command.contains("ls-tree")
+                && command.contains("Sources")
+                && exitCode != 0
+                && !stderr.isEmpty
+        }
+    }
+
+    @Test("Given submodule entry and default stderr closure, when listing, then warning is written to standard error")
+    func defaultStderrWritesToStandardError() throws {
+        let repo = try GitRepositoryFixture()
+        defer { repo.cleanup() }
+
+        try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
+        let headSha = try repo.commit(message: "main")
+
+        try repo.run("update-index", "--add", "--cacheinfo", "160000,\(headSha),SubProject")
+
+        let captured = StderrCapture.capture {
+            let lister = GitRefSourceFileLister(
+                ref: ":0",
+                resolvedSha: ":0",
+                repositoryRoot: repo.root,
+                crossLanguageEnabled: false
+            )
+            _ = try? lister.listFiles(in: [""])
+        }
+
+        #expect(captured.contains("SubProject"))
+        #expect(captured.contains("submodule"))
+    }
+
     @Test("Given path missing in ref, when listing, then throws pathDoesNotExistInRef")
     func missingPathThrowsRefAware() throws {
         let repo = try GitRepositoryFixture()
