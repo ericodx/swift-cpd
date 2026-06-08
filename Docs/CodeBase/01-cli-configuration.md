@@ -60,6 +60,7 @@ All numeric arguments are parsed and range-validated here. Boolean flags default
 | `--ignore-structural` | flag | Skip Type 3/4 clones |
 | `--no-cache` | flag | Disable tokenization cache |
 | `--cache-dir <path>` | `String` | Cache directory |
+| `--source-ref <ref>` | `String` | Read sources from a git ref instead of the working tree |
 | `--version` | flag | Print version and exit |
 | `--help` | flag | Print help and exit |
 | `init` | command | Generate `.swift-cpd.yml` |
@@ -100,6 +101,7 @@ var inlineSuppressionTag: String?
 var enabledCloneTypes: Set<CloneType>?
 var cacheDirectory: String?
 var noCache: Bool
+var sourceRef: String?
 ```
 
 ---
@@ -142,6 +144,9 @@ Throws `ConfigurationError` when `paths` is empty after merging.
 | `ignoreStructural` | `Bool` | `true` |
 | `noCache` | `Bool` | `false` |
 | `cacheDirectory` | `String` | `.swift-cpd-cache` |
+| `sourceRef` | `String?` | `nil` |
+
+When `sourceRef` is non-nil, `SwiftCPD.runAnalysis` resolves it via `GitRefResolver` and builds `GitRefSourceFileLister` + `GitRefSourceReader` instead of the filesystem variants. An empty string is treated as `nil` (reads the working tree). See the [Reading from a git ref](../USAGE.md#reading-from-a-git-ref---source-ref) section of USAGE for user-facing behavior.
 
 ---
 
