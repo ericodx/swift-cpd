@@ -16,7 +16,7 @@ struct AnalysisPipelineSourceRefTests {
         try repo.commit()
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
-        let pipeline = makePipeline(cacheDir: cacheDir)
+        let pipeline = makeSourceRefPipeline(cacheDir: cacheDir)
         let result = try await pipeline.analyze(files: [
             repo.root + "/Sources/A.swift",
             repo.root + "/Sources/B.swift",
@@ -39,7 +39,7 @@ struct AnalysisPipelineSourceRefTests {
 
         let cacheDir = repo.root + "/.swift-cpd-cache-ref"
         let reader = GitRefSourceReader(ref: "HEAD", resolvedSha: sha, repositoryRoot: repo.root)
-        let pipeline = makePipeline(cacheDir: cacheDir, reader: reader, resolvedSha: sha)
+        let pipeline = makeSourceRefPipeline(cacheDir: cacheDir, reader: reader, resolvedSha: sha)
         let files = try GitRefSourceFileLister(
             ref: "HEAD",
             resolvedSha: sha,
@@ -52,7 +52,7 @@ struct AnalysisPipelineSourceRefTests {
         #expect(!result.cloneGroups.isEmpty)
 
         let cacheDirWT = repo.root + "/.swift-cpd-cache-wt"
-        let wtPipeline = makePipeline(cacheDir: cacheDirWT)
+        let wtPipeline = makeSourceRefPipeline(cacheDir: cacheDirWT)
         let wtResult = try await wtPipeline.analyze(files: files)
 
         #expect(wtResult.cloneGroups.isEmpty)
@@ -69,7 +69,7 @@ struct AnalysisPipelineSourceRefTests {
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
         let reader = GitRefSourceReader(ref: "HEAD", resolvedSha: sha, repositoryRoot: repo.root)
-        let pipeline = makePipeline(cacheDir: cacheDir, reader: reader, resolvedSha: sha)
+        let pipeline = makeSourceRefPipeline(cacheDir: cacheDir, reader: reader, resolvedSha: sha)
         let files = [repo.root + "/Sources/A.swift", repo.root + "/Sources/B.swift"]
 
         _ = try await pipeline.analyze(files: files)
@@ -91,7 +91,7 @@ struct AnalysisPipelineSourceRefTests {
 
         let cacheDir = repo.root + "/.swift-cpd-cache"
         let firstFiles = [repo.root + "/Sources/A.swift", repo.root + "/Sources/B.swift"]
-        let firstPipeline = makePipeline(
+        let firstPipeline = makeSourceRefPipeline(
             cacheDir: cacheDir,
             reader: GitRefSourceReader(
                 ref: "HEAD", resolvedSha: firstSha, repositoryRoot: repo.root
@@ -104,7 +104,7 @@ struct AnalysisPipelineSourceRefTests {
         let secondSha = try repo.commit(message: "second")
         #expect(firstSha != secondSha)
 
-        let secondPipeline = makePipeline(
+        let secondPipeline = makeSourceRefPipeline(
             cacheDir: cacheDir,
             reader: GitRefSourceReader(
                 ref: "HEAD", resolvedSha: secondSha, repositoryRoot: repo.root
@@ -135,7 +135,7 @@ struct AnalysisPipelineSourceRefTests {
         #expect(firstResolved.resolvedSha == firstSha)
 
         let firstFiles = [repo.root + "/Sources/A.swift", repo.root + "/Sources/B.swift"]
-        let firstPipeline = makePipeline(
+        let firstPipeline = makeSourceRefPipeline(
             cacheDir: cacheDir,
             reader: GitRefSourceReader(
                 ref: "main", resolvedSha: firstResolved.resolvedSha, repositoryRoot: repo.root
@@ -150,7 +150,7 @@ struct AnalysisPipelineSourceRefTests {
         let secondResolved = try GitRefResolver().resolve(ref: "main", in: repo.root)
         #expect(secondResolved.resolvedSha != firstResolved.resolvedSha)
 
-        let secondPipeline = makePipeline(
+        let secondPipeline = makeSourceRefPipeline(
             cacheDir: cacheDir,
             reader: GitRefSourceReader(
                 ref: "main", resolvedSha: secondResolved.resolvedSha, repositoryRoot: repo.root
@@ -183,7 +183,7 @@ struct AnalysisPipelineSourceRefTests {
         let files = [repo.root + "/Sources/A.swift", repo.root + "/Sources/B.swift"]
 
         let cacheDirRef = repo.root + "/.swift-cpd-cache-ref"
-        let refPipeline = makePipeline(
+        let refPipeline = makeSourceRefPipeline(
             cacheDir: cacheDirRef,
             reader: GitRefSourceReader(
                 ref: "HEAD", resolvedSha: sha, repositoryRoot: repo.root
@@ -194,21 +194,9 @@ struct AnalysisPipelineSourceRefTests {
         #expect(refResult.cloneGroups.isEmpty)
 
         let cacheDirWT = repo.root + "/.swift-cpd-cache-wt"
-        let wtPipeline = makePipeline(cacheDir: cacheDirWT)
+        let wtPipeline = makeSourceRefPipeline(cacheDir: cacheDirWT)
         let wtResult = try await wtPipeline.analyze(files: files)
         #expect(!wtResult.cloneGroups.isEmpty)
-    }
-
-    private func makePipeline(
-        cacheDir: String,
-        reader: any SourceReader = WorkingTreeSourceReader(),
-        resolvedSha: String? = nil
-    ) -> AnalysisPipeline {
-        AnalysisPipeline(
-            detection: .init(minimumTokenCount: 10, minimumLineCount: 2),
-            cache: .init(directory: cacheDir),
-            source: .init(reader: reader, resolvedSha: resolvedSha)
-        )
     }
 
     private func loadCacheEnvelope(at directory: String) throws -> FileCache.Envelope {
