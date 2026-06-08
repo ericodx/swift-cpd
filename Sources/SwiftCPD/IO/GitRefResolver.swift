@@ -50,16 +50,7 @@ extension GitRefResolver {
             throw SourceRefError.unknownRef(ref: ref)
         }
 
-        let sha =
-            String(data: result.stdout, encoding: .utf8)?
+        return String(data: result.stdout, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-        guard
-            !sha.isEmpty
-        else {
-            throw SourceRefError.unknownRef(ref: ref)
-        }
-
-        return sha
     }
 }
