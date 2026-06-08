@@ -15,8 +15,12 @@ struct GitRefResolver: Sendable {
 
     func resolve(ref: String, in workingDirectory: String) throws -> Resolved {
         let repositoryRoot = try resolveRepositoryRoot(in: workingDirectory)
-        let resolvedSha = try resolveSha(of: ref, in: repositoryRoot)
 
+        if ref == ":0" {
+            return Resolved(repositoryRoot: repositoryRoot, resolvedSha: ":0")
+        }
+
+        let resolvedSha = try resolveSha(of: ref, in: repositoryRoot)
         return Resolved(repositoryRoot: repositoryRoot, resolvedSha: resolvedSha)
     }
 }
