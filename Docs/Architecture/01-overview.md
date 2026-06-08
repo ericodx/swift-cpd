@@ -17,6 +17,7 @@ graph TD
     CLI["CLI<br/>(ArgumentParser · Configuration)"]
     YAML["Configuration<br/>(YamlConfigurationLoader)"]
     DISC["FileDiscovery<br/>(SourceFileDiscovery)"]
+    IO["IO<br/>(SourceReader · SourceFileLister<br/>Filesystem · GitRef variants)"]
     PIPE["Pipeline<br/>(AnalysisPipeline)"]
     TOK["Tokenization<br/>(SwiftTokenizer · CTokenizer)"]
     SUP["Suppression<br/>(SuppressionScanner)"]
@@ -26,9 +27,11 @@ graph TD
     REP["Reporting<br/>(TextReporter · JsonReporter · ...)"]
     PLUGIN["Build Plugin<br/>(SwiftCPDPlugin)"]
 
+    CLI --> IO
     CLI --> PIPE
     YAML --> CLI
-    DISC --> PIPE
+    IO --> DISC
+    IO --> PIPE
     PIPE --> TOK
     PIPE --> SUP
     PIPE --> DET
@@ -48,8 +51,11 @@ flowchart TD
     B --> C[Merge into Configuration]
     C --> D{Command?}
     D -- init --> E[Generate .swift-cpd.yml]
-    D -- analyze --> F[Discover source files]
-    F --> G[Run AnalysisPipeline]
+    D -- analyze --> SIO{sourceRef set?}
+    SIO -- no --> F1[FilesystemSourceFileLister<br/>+ WorkingTreeSourceReader]
+    SIO -- yes --> F2[GitRefResolver +<br/>GitRefSourceFileLister<br/>+ GitRefSourceReader]
+    F1 --> G[Run AnalysisPipeline]
+    F2 --> G
     G --> H[Filter results]
     H --> I{Baseline mode?}
     I -- generate / update --> J[Save baseline]
