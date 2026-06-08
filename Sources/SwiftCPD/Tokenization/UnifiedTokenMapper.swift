@@ -177,16 +177,24 @@ extension UnifiedTokenMapper {
         while index < tokens.count && depth > 0 {
             let token = tokens[index]
 
-            if token.kind == .punctuation && token.text == "[" {
-                depth += 1
-            } else if token.kind == .punctuation && token.text == "]" {
-                depth -= 1
+            if token.kind == .punctuation {
+                switch token.text {
+                case "[":
+                    depth += 1
 
-                if depth == 0 {
-                    return (foundColon, index)
+                case "]":
+                    depth -= 1
+
+                    if depth == 0 {
+                        return (foundColon, index)
+                    }
+
+                case ":" where depth == 1:
+                    foundColon = true
+
+                default:
+                    break
                 }
-            } else if depth == 1 && token.kind == .punctuation && token.text == ":" {
-                foundColon = true
             }
 
             index += 1
