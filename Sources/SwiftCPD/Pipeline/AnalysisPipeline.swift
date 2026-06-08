@@ -24,11 +24,6 @@ struct AnalysisPipeline: Sendable {
     private let suppressionScanner: SuppressionScanner
     private let hasher = FileHasher()
 
-    struct CacheOptions: Sendable {
-        var directory: String
-        var disabled: Bool = false
-    }
-
     struct SourceOptions: Sendable {
 
         init(
