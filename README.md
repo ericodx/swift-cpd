@@ -80,6 +80,18 @@ exclude:
 
 Full reference in the [Usage & Configuration Guide](Docs/USAGE.md).
 
+## Analyze a git ref instead of the working tree
+
+Use `--source-ref` to read source files from a git ref (branch, sha, `HEAD`, or `:0` for the index) instead of the working tree. The primary motivation is `pre-commit` integration — running against `:0` analyzes exactly what is about to be committed, side-stepping the Frankenstein working tree produced by `git commit --only`.
+
+```bash
+swift-cpd --source-ref HEAD Sources/    # last committed state
+swift-cpd --source-ref :0   Sources/    # the index (staged blobs)
+swift-cpd --source-ref main Sources/    # a branch tip
+```
+
+See [Reading from a git ref](Docs/USAGE.md#reading-from-a-git-ref---source-ref) for pre-commit recipes and caveats.
+
 ## Documentation
 
 | Document | Description |
