@@ -13,8 +13,7 @@ func analyzeDirectory(
     let cacheDir = directory + "/.swift-cpd-cache-\(cacheLabel)"
 
     let pipeline = AnalysisPipeline(
-        minimumTokenCount: minimumTokenCount,
-        minimumLineCount: minimumLineCount,
+        detection: .init(minimumTokenCount: minimumTokenCount, minimumLineCount: minimumLineCount),
         cache: .init(directory: cacheDir)
     )
 

@@ -37,16 +37,14 @@ struct DeterminismTests {
 
         let cacheA = tempDir + "/.cache-order-a"
         let pipelineA = AnalysisPipeline(
-            minimumTokenCount: 5,
-            minimumLineCount: 1,
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1),
             cache: .init(directory: cacheA)
         )
         let resultA = try await pipelineA.analyze(files: files)
 
         let cacheB = tempDir + "/.cache-order-b"
         let pipelineB = AnalysisPipeline(
-            minimumTokenCount: 5,
-            minimumLineCount: 1,
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1),
             cache: .init(directory: cacheB)
         )
         let resultB = try await pipelineB.analyze(files: reversed)
@@ -117,8 +115,7 @@ struct DeterminismTests {
         let cacheDir = tempDir + "/.swift-cpd-cache"
 
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5,
-            minimumLineCount: 1,
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1),
             cache: .init(directory: cacheDir)
         )
 

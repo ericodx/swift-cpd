@@ -202,23 +202,27 @@ extension SwiftCPD {
         resolvedSha: String?
     ) -> AnalysisPipeline {
         AnalysisPipeline(
-            minimumTokenCount: configuration.minimumTokenCount,
-            minimumLineCount: configuration.minimumLineCount,
+            detection: AnalysisPipeline.DetectionOptions(
+                minimumTokenCount: configuration.minimumTokenCount,
+                minimumLineCount: configuration.minimumLineCount,
+                thresholds: DetectionThresholds(
+                    type3Similarity: configuration.type3Similarity,
+                    type3TileSize: configuration.type3TileSize,
+                    type3CandidateThreshold: configuration.type3CandidateThreshold,
+                    type4Similarity: configuration.type4Similarity
+                ),
+                enabledCloneTypes: configuration.enabledCloneTypes,
+                crossLanguageEnabled: configuration.crossLanguageEnabled,
+                inlineSuppressionTag: configuration.inlineSuppressionTag
+            ),
             cache: AnalysisPipeline.CacheOptions(
                 directory: configuration.cacheDirectory,
                 disabled: configuration.noCache
             ),
-            crossLanguageEnabled: configuration.crossLanguageEnabled,
-            thresholds: DetectionThresholds(
-                type3Similarity: configuration.type3Similarity,
-                type3TileSize: configuration.type3TileSize,
-                type3CandidateThreshold: configuration.type3CandidateThreshold,
-                type4Similarity: configuration.type4Similarity
-            ),
-            inlineSuppressionTag: configuration.inlineSuppressionTag,
-            enabledCloneTypes: configuration.enabledCloneTypes,
-            sourceReader: sourceReader,
-            sourceFileResolvedSha: resolvedSha
+            source: AnalysisPipeline.SourceOptions(
+                reader: sourceReader,
+                resolvedSha: resolvedSha
+            )
         )
     }
 

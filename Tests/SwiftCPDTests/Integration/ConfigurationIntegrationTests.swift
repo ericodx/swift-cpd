@@ -148,8 +148,7 @@ struct ConfigurationIntegrationTests {
 
         let cacheDir = tempDir + "/.swift-cpd-cache"
         let pipeline = AnalysisPipeline(
-            minimumTokenCount: 5,
-            minimumLineCount: 1,
+            detection: .init(minimumTokenCount: 5, minimumLineCount: 1),
             cache: .init(directory: cacheDir)
         )
 

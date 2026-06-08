@@ -205,11 +205,9 @@ struct AnalysisPipelineSourceRefTests {
         resolvedSha: String? = nil
     ) -> AnalysisPipeline {
         AnalysisPipeline(
-            minimumTokenCount: 10,
-            minimumLineCount: 2,
+            detection: .init(minimumTokenCount: 10, minimumLineCount: 2),
             cache: .init(directory: cacheDir),
-            sourceReader: reader,
-            sourceFileResolvedSha: resolvedSha
+            source: .init(reader: reader, resolvedSha: resolvedSha)
         )
     }
 

@@ -3,33 +3,19 @@ import Foundation
 struct AnalysisPipeline: Sendable {
 
     init(
-        minimumTokenCount: Int = 50,
-        minimumLineCount: Int = 5,
+        detection: DetectionOptions = DetectionOptions(),
         cache: CacheOptions = CacheOptions(directory: ".swift-cpd-cache"),
-        crossLanguageEnabled: Bool = false,
-        thresholds: DetectionThresholds = .defaults,
-        inlineSuppressionTag: String = "swiftcpd:ignore",
-        enabledCloneTypes: Set<CloneType> = Set(CloneType.allCases),
-        sourceReader: any SourceReader = WorkingTreeSourceReader(),
-        sourceFileResolvedSha: String? = nil
+        source: SourceOptions = SourceOptions()
     ) {
-        self.minimumTokenCount = minimumTokenCount
-        self.minimumLineCount = minimumLineCount
+        self.detection = detection
         self.cache = cache
-        self.crossLanguageEnabled = crossLanguageEnabled
-        self.thresholds = thresholds
-        self.suppressionScanner = SuppressionScanner(tag: inlineSuppressionTag)
-        self.enabledCloneTypes = enabledCloneTypes
-        self.sourceReader = sourceReader
-        self.sourceFileResolvedSha = sourceFileResolvedSha
+        self.source = source
+        self.suppressionScanner = SuppressionScanner(tag: detection.inlineSuppressionTag)
     }
 
-    let minimumTokenCount: Int
-    let minimumLineCount: Int
+    let detection: DetectionOptions
     let cache: CacheOptions
-    let crossLanguageEnabled: Bool
-    let thresholds: DetectionThresholds
-    let enabledCloneTypes: Set<CloneType>
+    let source: SourceOptions
 
     private let swiftTokenizer = SwiftTokenizer()
     private let cTokenizer = CTokenizer()
@@ -37,12 +23,33 @@ struct AnalysisPipeline: Sendable {
     private let normalizer = TokenNormalizer()
     private let suppressionScanner: SuppressionScanner
     private let hasher = FileHasher()
-    private let sourceReader: any SourceReader
-    private let sourceFileResolvedSha: String?
+
+    struct DetectionOptions: Sendable {
+        var minimumTokenCount: Int = 50
+        var minimumLineCount: Int = 5
+        var thresholds: DetectionThresholds = .defaults
+        var enabledCloneTypes: Set<CloneType> = Set(CloneType.allCases)
+        var crossLanguageEnabled: Bool = false
+        var inlineSuppressionTag: String = "swiftcpd:ignore"
+    }
 
     struct CacheOptions: Sendable {
         var directory: String
         var disabled: Bool = false
+    }
+
+    struct SourceOptions: Sendable {
+
+        init(
+            reader: any SourceReader = WorkingTreeSourceReader(),
+            resolvedSha: String? = nil
+        ) {
+            self.reader = reader
+            self.resolvedSha = resolvedSha
+        }
+
+        var reader: any SourceReader
+        var resolvedSha: String?
     }
 
     func analyze(files: [String]) async throws -> PipelineResult {
@@ -88,30 +95,30 @@ extension AnalysisPipeline {
     private func buildDetectors() -> [any DetectionAlgorithm] {
         let allDetectors: [any DetectionAlgorithm] = [
             CloneDetector(
-                minimumTokenCount: minimumTokenCount,
-                minimumLineCount: minimumLineCount
+                minimumTokenCount: detection.minimumTokenCount,
+                minimumLineCount: detection.minimumLineCount
             ),
             Type3Detector(
-                similarityThreshold: Double(thresholds.type3Similarity),
-                minimumTileSize: thresholds.type3TileSize,
-                minimumTokenCount: minimumTokenCount,
-                minimumLineCount: minimumLineCount,
-                candidateFilterThreshold: Double(thresholds.type3CandidateThreshold)
+                similarityThreshold: Double(detection.thresholds.type3Similarity),
+                minimumTileSize: detection.thresholds.type3TileSize,
+                minimumTokenCount: detection.minimumTokenCount,
+                minimumLineCount: detection.minimumLineCount,
+                candidateFilterThreshold: Double(detection.thresholds.type3CandidateThreshold)
             ),
             Type4Detector(
-                semanticSimilarityThreshold: Double(thresholds.type4Similarity),
-                minimumTokenCount: minimumTokenCount,
-                minimumLineCount: minimumLineCount
+                semanticSimilarityThreshold: Double(detection.thresholds.type4Similarity),
+                minimumTokenCount: detection.minimumTokenCount,
+                minimumLineCount: detection.minimumLineCount
             ),
         ]
 
         return allDetectors.filter { detector in
-            !detector.supportedCloneTypes.isDisjoint(with: enabledCloneTypes)
+            !detector.supportedCloneTypes.isDisjoint(with: detection.enabledCloneTypes)
         }
     }
 
     private func filterByEnabledTypes(_ clones: [CloneGroup]) -> [CloneGroup] {
-        clones.filter { enabledCloneTypes.contains($0.type) }
+        clones.filter { detection.enabledCloneTypes.contains($0.type) }
     }
 
     private func processFiles(_ files: [String], cache: FileCache) async throws -> [FileTokens] {
@@ -133,21 +140,21 @@ extension AnalysisPipeline {
     }
 
     private func tokenizeFile(_ filePath: String, cache: FileCache) async throws -> FileTokens {
-        let data = try sourceReader.read(file: filePath)
+        let data = try source.reader.read(file: filePath)
         let contentHash = hasher.hash(data: data)
 
         guard
-            let source = String(data: data, encoding: .utf8)
+            let sourceText = String(data: data, encoding: .utf8)
         else {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
 
-        let cacheKey = CacheKey(file: filePath, resolvedSha: sourceFileResolvedSha)
+        let cacheKey = CacheKey(file: filePath, resolvedSha: source.resolvedSha)
 
         if let cached = await cache.lookup(key: cacheKey, contentHash: contentHash) {
             return FileTokens(
                 file: filePath,
-                source: source,
+                source: sourceText,
                 tokens: cached.tokens,
                 normalizedTokens: cached.normalizedTokens
             )
@@ -155,13 +162,13 @@ extension AnalysisPipeline {
 
         let rawTokens =
             if filePath.hasSuffix(".swift") {
-                swiftTokenizer.tokenize(source: source, file: filePath)
+                swiftTokenizer.tokenize(source: sourceText, file: filePath)
             } else {
-                cTokenizer.tokenize(source: source, file: filePath)
+                cTokenizer.tokenize(source: sourceText, file: filePath)
             }
 
-        let mappedTokens = crossLanguageEnabled ? unifiedMapper.map(rawTokens) : rawTokens
-        let suppressedLines = suppressionScanner.suppressedLines(in: source)
+        let mappedTokens = detection.crossLanguageEnabled ? unifiedMapper.map(rawTokens) : rawTokens
+        let suppressedLines = suppressionScanner.suppressedLines(in: sourceText)
         var tokens = mappedTokens
         if !suppressedLines.isEmpty {
             tokens = mappedTokens.filter { !suppressedLines.contains($0.location.line) }
@@ -178,7 +185,7 @@ extension AnalysisPipeline {
 
         return FileTokens(
             file: filePath,
-            source: source,
+            source: sourceText,
             tokens: tokens,
             normalizedTokens: normalizedTokens
         )
