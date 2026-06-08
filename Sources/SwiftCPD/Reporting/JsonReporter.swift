@@ -63,7 +63,9 @@ extension JsonReporter {
             clones: jsonClones,
             metadata: metadata,
             summary: summary,
-            version: "1.0.0"
+            version: "1.0.0",
+            sourceRef: result.sourceRef,
+            resolvedSha: result.resolvedSha
         )
     }
 
