@@ -13,11 +13,6 @@ actor FileCache {
     private var entries: [String: CacheEntry] = [:]
     private let encoder: @Sendable (Envelope) throws -> Data
 
-    struct Envelope: Codable, Sendable {
-        let schemaVersion: Int
-        let entries: [String: CacheEntry]
-    }
-
     func lookup(key: CacheKey, contentHash: String) -> CacheEntry? {
         guard
             let entry = entries[key.encoded],
