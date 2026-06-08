@@ -105,14 +105,19 @@ extension SuppressionScanner {
             let content = lines[line - 1]
 
             for char in content {
-                if char == "{" {
+                switch char {
+                case "{":
                     depth += 1
-                } else if char == "}" {
+
+                case "}":
                     depth -= 1
 
                     if depth == 0 {
                         return startLine ... line
                     }
+
+                default:
+                    break
                 }
             }
 
