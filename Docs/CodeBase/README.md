@@ -7,7 +7,7 @@ Detailed documentation of every type, protocol, and algorithm in `swift-cpd`. Fo
 | # | Document | Types covered |
 |---|---|---|
 | 01 | [CLI & Configuration](01-cli-configuration.md) | `ArgumentParser` · `ParsedArguments` · `Configuration` · `OutputFormat` · `BaselineMode` · `ExitCode` · `SourcePathDiscovery` |
-| 02 | [File Discovery](02-file-discovery.md) | `SourceFileDiscovery` · `GlobMatcher` · `FileDiscoveryError` |
+| 02 | [File Discovery & Source IO](02-file-discovery.md) | `SourceFileLister` · `SourceReader` · `FilesystemSourceFileLister` · `WorkingTreeSourceReader` · `SourceFileDiscovery` · `GlobMatcher` · `FileDiscoveryError` |
 | 03 | [Tokenization](03-tokenization.md) | `Token` · `TokenKind` · `SourceLocation` · `SwiftTokenizer` · `CTokenizer` · `TokenNormalizer` · `UnifiedTokenMapper` · `SuppressionScanner` |
 | 04 | [Pipeline](04-pipeline.md) | `AnalysisPipeline` · `DetectionThresholds` · `PipelineResult` · `ProgressReporter` · `ProgressState` |
 | 05 | [Detection — Core](05-detection-core.md) | `DetectionAlgorithm` · `CloneType` · `CloneGroup` · `CloneFragment` · `FileTokens` · `CodeBlock` · `IndexedBlock` · `BlockExtraction` · `BlockExtractor` · `BlockVisitor` · `RangedSyntaxVisitor` · `CloneGroupDeduplicator` |
@@ -17,3 +17,4 @@ Detailed documentation of every type, protocol, and algorithm in `swift-cpd`. Fo
 | 09 | [Reporting](09-reporting.md) | `Reporter` · `AnalysisResult` · `TextReporter` · `JsonReporter` · `HtmlReporter` · `XcodeReporter` · `DuplicationCalculator` |
 | 10 | [Cache & Baseline](10-cache-baseline.md) | `FileCache` · `CacheEntry` · `FileHasher` · `BaselineStore` · `BaselineEntry` · `FragmentFingerprint` |
 | 11 | [Plugin](11-plugin.md) | `SwiftCPDPlugin` |
+| 12 | [Source IO (Git Refs)](12-source-io.md) | `SourceRefError` · `GitProcessRunner` · `GitRefResolver` · `GitRefSourceFileLister` · `GitRefSourceReader` · `repositoryRelativePath` |
