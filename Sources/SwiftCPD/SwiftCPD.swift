@@ -98,7 +98,9 @@ extension SwiftCPD {
             totalTokens: pipelineResult.totalTokens,
             minimumTokenCount: configuration.minimumTokenCount,
             minimumLineCount: configuration.minimumLineCount,
-            filteredCloneCount: filteredCloneCount
+            filteredCloneCount: filteredCloneCount,
+            sourceRef: configuration.sourceRef,
+            resolvedSha: sourceIO.resolvedSha
         )
 
         switch configuration.baselineMode {
@@ -170,7 +172,9 @@ extension SwiftCPD {
             totalTokens: result.totalTokens,
             minimumTokenCount: result.minimumTokenCount,
             minimumLineCount: result.minimumLineCount,
-            filteredCloneCount: result.filteredCloneCount
+            filteredCloneCount: result.filteredCloneCount,
+            sourceRef: result.sourceRef,
+            resolvedSha: result.resolvedSha
         )
 
         let reporter = makeReporter(configuration.outputFormat)

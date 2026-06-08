@@ -9,6 +9,8 @@ struct AnalysisResult: Sendable {
     let minimumTokenCount: Int
     let minimumLineCount: Int
     var filteredCloneCount: Int = 0
+    var sourceRef: String?
+    var resolvedSha: String?
 
     var sortedCloneGroups: [CloneGroup] {
         cloneGroups.sorted { lhs, rhs in
