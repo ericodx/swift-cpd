@@ -9,7 +9,7 @@ struct ConfigurationSourceRefTests {
     func cliOverridesYaml() throws {
         var parsed = ParsedArguments(paths: ["Sources/"])
         parsed.sourceRef = "HEAD"
-        let yaml = makeYaml(sourceRef: "main")
+        let yaml = makeYamlConfiguration(sourceRef: "main")
 
         let config = try Configuration(from: parsed, yaml: yaml)
 
@@ -19,7 +19,7 @@ struct ConfigurationSourceRefTests {
     @Test("Given sourceRef only in YAML, when creating configuration, then uses YAML (C2)")
     func yamlFallback() throws {
         let parsed = ParsedArguments(paths: ["Sources/"])
-        let yaml = makeYaml(sourceRef: "HEAD")
+        let yaml = makeYamlConfiguration(sourceRef: "HEAD")
 
         let config = try Configuration(from: parsed, yaml: yaml)
 
@@ -48,32 +48,11 @@ struct ConfigurationSourceRefTests {
     @Test("Given empty YAML sourceRef, when creating configuration, then treated as nil")
     func emptyYamlTreatedAsNil() throws {
         let parsed = ParsedArguments(paths: ["Sources/"])
-        let yaml = makeYaml(sourceRef: "")
+        let yaml = makeYamlConfiguration(sourceRef: "")
 
         let config = try Configuration(from: parsed, yaml: yaml)
 
         #expect(config.sourceRef == nil)
     }
 
-    private func makeYaml(sourceRef: String) -> YamlConfiguration {
-        YamlConfiguration(
-            minimumTokenCount: nil,
-            minimumLineCount: nil,
-            outputFormat: nil,
-            paths: nil,
-            maxDuplication: nil,
-            type3Similarity: nil,
-            type3TileSize: nil,
-            type3CandidateThreshold: nil,
-            type4Similarity: nil,
-            crossLanguageEnabled: nil,
-            exclude: nil,
-            inlineSuppressionTag: nil,
-            enabledCloneTypes: nil,
-            ignoreSameFile: nil,
-            ignoreStructural: nil,
-            noCache: nil,
-            sourceRef: sourceRef
-        )
-    }
 }
