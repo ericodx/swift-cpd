@@ -8,11 +8,6 @@ struct GitRefResolver: Sendable {
 
     private let runner: GitProcessRunner
 
-    struct Resolved: Equatable, Sendable {
-        let repositoryRoot: String
-        let resolvedSha: String
-    }
-
     func resolve(ref: String, in workingDirectory: String) throws -> Resolved {
         let repositoryRoot = try resolveRepositoryRoot(in: workingDirectory)
 
