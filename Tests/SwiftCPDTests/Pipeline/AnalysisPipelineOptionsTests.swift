@@ -27,4 +27,12 @@ struct AnalysisPipelineOptionsTests {
         #expect(options.reader is WorkingTreeSourceReader)
         #expect(options.resolvedSha == nil)
     }
+
+    @Test("Given clone groups with empty fragments, when comparing, then returns false")
+    func compareCloneGroupsWithEmptyFragmentsReturnsFalse() {
+        let lhs = makeCloneGroup(type: .type1, tokenCount: 10, fragments: [])
+        let rhs = makeCloneGroup(type: .type1, tokenCount: 10, fragments: [])
+
+        #expect(AnalysisPipeline.compareCloneGroups(lhs, rhs) == false)
+    }
 }
