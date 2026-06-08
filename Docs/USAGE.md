@@ -308,6 +308,22 @@ Two recipes that side-step this:
 - **Empty `--source-ref ""` is treated as unset** (reads the working tree).
 - **Cache is namespaced by resolved sha.** Mutable refs like `HEAD` or `main` reuse the cache across runs as long as the underlying sha is unchanged. When the ref moves, the cache misses for that file.
 
+### Output additions
+
+When `--source-ref` is set, reports surface the ref in their header:
+
+- **text**: header reads `Found N clone(s) in M files (at <ref>, T s)` (or the equivalent no-clones message). Without `--source-ref` the header is unchanged: `Found N clone(s) in M files (T s)`.
+- **json**: two extra top-level keys appear next to `clones`, `metadata`, `summary`, `version`:
+  ```json
+  {
+    "sourceRef": "HEAD",
+    "resolvedSha": "a1b2c3d4…",
+    "clones": [ ... ],
+    ...
+  }
+  ```
+  Both keys are **omitted entirely** when `--source-ref` is absent — existing JSON consumers are unaffected.
+
 ### Errors you may see
 
 | Message | Cause |
