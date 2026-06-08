@@ -313,6 +313,7 @@ Two recipes that side-step this:
 When `--source-ref` is set, reports surface the ref in their header:
 
 - **text**: header reads `Found N clone(s) in M files (at <ref>, T s)` (or the equivalent no-clones message). Without `--source-ref` the header is unchanged: `Found N clone(s) in M files (T s)`.
+- **html**: the summary paragraph mirrors the text format and includes `at <ref>` when set. The ref is HTML-escaped before being rendered.
 - **json**: two extra top-level keys appear next to `clones`, `metadata`, `summary`, `version`:
   ```json
   {
@@ -323,6 +324,8 @@ When `--source-ref` is set, reports surface the ref in their header:
   }
   ```
   Both keys are **omitted entirely** when `--source-ref` is absent — existing JSON consumers are unaffected.
+
+> **Note about `--format xcode`.** The Xcode format is designed for the SPM/Xcode build plugin, which runs against the working tree. Combining `--format xcode` with `--source-ref` produces warnings whose `file:line` come from the **blob**, but Xcode opens the corresponding **working-tree** file when you click them. If the working tree and the ref have diverged, the line shown may not contain the flagged code. Prefer `--format text` or `--format json` when analyzing a specific ref.
 
 ### Errors you may see
 
