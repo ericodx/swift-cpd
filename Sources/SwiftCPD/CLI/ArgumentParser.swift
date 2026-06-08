@@ -57,22 +57,33 @@ extension ArgumentParser {
     }
 
     private func applyBooleanFlag(_ flag: String, to result: inout ParsedArguments) {
-        if flag == "--version" {
+        switch flag {
+        case "--version":
             result.showVersion = true
-        } else if flag == "--help" {
+
+        case "--help":
             result.showHelp = true
-        } else if flag == "--baseline-generate" {
+
+        case "--baseline-generate":
             result.baselineGenerate = true
-        } else if flag == "--baseline-update" {
+
+        case "--baseline-update":
             result.baselineUpdate = true
-        } else if flag == "--cross-language" {
+
+        case "--cross-language":
             result.crossLanguageEnabled = true
-        } else if flag == "--ignore-same-file" {
+
+        case "--ignore-same-file":
             result.ignoreSameFile = true
-        } else if flag == "--ignore-structural" {
+
+        case "--ignore-structural":
             result.ignoreStructural = true
-        } else if flag == "--no-cache" {
+
+        case "--no-cache":
             result.noCache = true
+
+        default:
+            break
         }
     }
 
@@ -150,13 +161,17 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        if flag == "--type3-similarity" {
+        switch flag {
+        case "--type3-similarity":
             result.type3Similarity = try requireInteger(for: flag, at: &index, in: args)
-        } else if flag == "--type3-tile-size" {
+
+        case "--type3-tile-size":
             result.type3TileSize = try requireInteger(for: flag, at: &index, in: args)
-        } else if flag == "--type3-candidate-threshold" {
+
+        case "--type3-candidate-threshold":
             result.type3CandidateThreshold = try requireInteger(for: flag, at: &index, in: args)
-        } else {
+
+        default:
             throw ArgumentParsingError.unknownFlag(flag)
         }
     }
@@ -167,9 +182,11 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        if flag == "--type4-similarity" {
+        switch flag {
+        case "--type4-similarity":
             result.type4Similarity = try requireInteger(for: flag, at: &index, in: args)
-        } else {
+
+        default:
             throw ArgumentParsingError.unknownFlag(flag)
         }
     }
