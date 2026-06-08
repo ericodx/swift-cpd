@@ -1,14 +1,14 @@
 struct ArgumentParser: Sendable {
 
-    private let booleanFlags: Set<String> = [
-        "--version",
-        "--help",
-        "--baseline-generate",
-        "--baseline-update",
-        "--cross-language",
-        "--ignore-same-file",
-        "--ignore-structural",
-        "--no-cache",
+    private static let booleanFlagKeyPaths: [String: WritableKeyPath<ParsedArguments, Bool> & Sendable] = [
+        "--version": \.showVersion,
+        "--help": \.showHelp,
+        "--baseline-generate": \.baselineGenerate,
+        "--baseline-update": \.baselineUpdate,
+        "--cross-language": \.crossLanguageEnabled,
+        "--ignore-same-file": \.ignoreSameFile,
+        "--ignore-structural": \.ignoreStructural,
+        "--no-cache": \.noCache,
     ]
 
     func parse(_ arguments: [String]) throws -> ParsedArguments {
@@ -48,43 +48,12 @@ extension ArgumentParser {
         at index: inout Int,
         in args: [String]
     ) throws {
-        if booleanFlags.contains(flag) {
-            applyBooleanFlag(flag, to: &result)
+        if let keyPath = Self.booleanFlagKeyPaths[flag] {
+            result[keyPath: keyPath] = true
             return
         }
 
         try applyValueFlag(flag, to: &result, at: &index, in: args)
-    }
-
-    private func applyBooleanFlag(_ flag: String, to result: inout ParsedArguments) {
-        switch flag {
-        case "--version":
-            result.showVersion = true
-
-        case "--help":
-            result.showHelp = true
-
-        case "--baseline-generate":
-            result.baselineGenerate = true
-
-        case "--baseline-update":
-            result.baselineUpdate = true
-
-        case "--cross-language":
-            result.crossLanguageEnabled = true
-
-        case "--ignore-same-file":
-            result.ignoreSameFile = true
-
-        case "--ignore-structural":
-            result.ignoreStructural = true
-
-        case "--no-cache":
-            result.noCache = true
-
-        default:
-            break
-        }
     }
 
     private func applyValueFlag(
