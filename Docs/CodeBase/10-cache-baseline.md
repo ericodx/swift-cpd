@@ -81,11 +81,10 @@ let normalizedTokens: [Token]      // after TokenNormalizer
 
 ```swift
 struct FileHasher: Sendable
-func hash(contentsOf filePath: String) throws -> String
 func hash(data: Data) -> String
 ```
 
-Returns the **SHA-256** digest of the input as a lowercase hex string. Used to detect content changes between runs. The `data:` overload hashes in-memory bytes — used when the source comes from a `SourceReader` rather than the filesystem directly.
+Returns the **SHA-256** digest of the input as a lowercase hex string. Used to detect content changes between runs. The pipeline hashes the bytes returned by `SourceReader.read(file:)` — the same call that produced the `Data` is reused, so no second filesystem read happens.
 
 ---
 
