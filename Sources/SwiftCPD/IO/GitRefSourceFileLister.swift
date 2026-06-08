@@ -116,7 +116,7 @@ extension GitRefSourceFileLister {
         return scope.isEmpty ? "git \(target)" : "git \(target) -- \(scope)"
     }
 
-    private func parseEntry(_ line: Substring) -> TreeEntry? {
+    func parseEntry(_ line: Substring) -> TreeEntry? {
         guard
             let tabIndex = line.firstIndex(of: "\t")
         else {

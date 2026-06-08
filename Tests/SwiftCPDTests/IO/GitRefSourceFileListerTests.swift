@@ -153,6 +153,20 @@ struct GitRefSourceFileListerTests {
         #expect(captured.text.contains("submodule"))
     }
 
+    @Test("Given line without tab, when parsing tree entry, then returns nil")
+    func parseEntryRejectsLineWithoutTab() {
+        let lister = makeGitRefSourceFileLister(sha: "deadbeef", repoRoot: "/tmp")
+
+        #expect(lister.parseEntry("100644 blob 1234abcd"[...]) == nil)
+    }
+
+    @Test("Given line with empty mode header, when parsing tree entry, then returns nil")
+    func parseEntryRejectsEmptyHeader() {
+        let lister = makeGitRefSourceFileLister(sha: "deadbeef", repoRoot: "/tmp")
+
+        #expect(lister.parseEntry("\tsome/path.swift"[...]) == nil)
+    }
+
     @Test("Given :0 with scoped path, when listing, then returns only files under that scope")
     func indexListingWithScopedPath() throws {
         let repo = try GitRepositoryFixture()
