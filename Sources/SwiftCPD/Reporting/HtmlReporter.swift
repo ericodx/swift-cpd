@@ -5,6 +5,7 @@ struct HtmlReporter: Reporter {
     func report(_ result: AnalysisResult) -> String {
         let clones = result.sortedCloneGroups
         let timeFormatted = String(format: "%.2f", result.executionTime)
+        let refSuffix = result.sourceRef.map { "at \(escapeHtml($0)), " } ?? ""
 
         return """
             <!DOCTYPE html>
@@ -20,7 +21,7 @@ struct HtmlReporter: Reporter {
                 <div class="summary">
                     <h1>swift-cpd Report</h1>
                     <p>\(clones.count) clone(s) found \
-            in \(result.filesAnalyzed) files (\(timeFormatted)s)</p>
+            in \(result.filesAnalyzed) files (\(refSuffix)\(timeFormatted)s)</p>
                 </div>
             \(clones.isEmpty ? renderNoClones(filteredCloneCount: result.filteredCloneCount) : renderClones(clones))
             </body>
