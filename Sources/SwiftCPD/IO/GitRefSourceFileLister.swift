@@ -50,7 +50,7 @@ struct GitRefSourceFileLister: SourceFileLister {
         var collected: [String] = []
 
         for inputPath in paths {
-            let relative = try repositoryRelative(for: inputPath)
+            let relative = try repositoryRelativePath(for: inputPath, in: repositoryRoot)
             let entries = try lsEntries(scope: relative)
 
             guard
@@ -86,31 +86,6 @@ struct GitRefSourceFileLister: SourceFileLister {
 }
 
 extension GitRefSourceFileLister {
-
-    private func repositoryRelative(for input: String) throws -> String {
-        let absolute = standardize(
-            input.hasPrefix("/") ? input : repositoryRoot + "/" + input
-        )
-        let normalizedRoot = standardize(repositoryRoot)
-        let rootWithSlash = normalizedRoot.hasSuffix("/") ? normalizedRoot : normalizedRoot + "/"
-
-        if absolute == normalizedRoot {
-            return ""
-        }
-
-        if absolute.hasPrefix(rootWithSlash) {
-            return String(absolute.dropFirst(rootWithSlash.count))
-        }
-
-        throw FileDiscoveryError.pathOutsideRepository(
-            path: input,
-            repositoryRoot: repositoryRoot
-        )
-    }
-
-    private func standardize(_ path: String) -> String {
-        (path as NSString).standardizingPath
-    }
 
     private func lsEntries(scope: String) throws -> [TreeEntry] {
         let result = try runListing(scope: scope)
