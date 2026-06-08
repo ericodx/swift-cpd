@@ -23,7 +23,6 @@ struct GitRefSourceFileLister: SourceFileLister {
         self.globMatcher = GlobMatcher(patterns: excludePatterns)
     }
 
-    private static let submoduleMode = "160000"
     private static let swiftExtensions: Set<String> = ["swift"]
     private static let cFamilyExtensions: Set<String> = ["m", "mm", "h", "c", "cpp"]
 
@@ -36,15 +35,6 @@ struct GitRefSourceFileLister: SourceFileLister {
     private let runner: GitProcessRunner
     private let stderr: @Sendable (String) -> Void
     private let globMatcher: GlobMatcher
-
-    struct TreeEntry: Equatable, Sendable {
-        let mode: String
-        let path: String
-
-        var isSubmodule: Bool {
-            mode == GitRefSourceFileLister.submoduleMode
-        }
-    }
 
     func listFiles(in paths: [String]) throws -> [String] {
         var collected: [String] = []
