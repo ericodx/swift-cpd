@@ -92,6 +92,49 @@ struct GitRefSourceReaderTests {
         }
     }
 
+    @Test("Given absolute path outside repository, when reading, then throws pathOutsideRepository")
+    func absolutePathOutsideRepoThrows() throws {
+        let repo = try GitRepositoryFixture()
+        defer { repo.cleanup() }
+
+        try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
+        let sha = try repo.commit()
+
+        let reader = GitRefSourceReader(ref: "HEAD", resolvedSha: sha, repositoryRoot: repo.root)
+        let outside = "/tmp/outside-\(UUID().uuidString).swift"
+
+        #expect {
+            _ = try reader.read(file: outside)
+        } throws: { error in
+            guard
+                case FileDiscoveryError.pathOutsideRepository(let path, let root) = error
+            else {
+                return false
+            }
+            return path == outside && root == repo.root
+        }
+    }
+
+    @Test("Given relative path with .. escaping repository, when reading, then throws pathOutsideRepository")
+    func relativeTraversalThrows() throws {
+        let repo = try GitRepositoryFixture()
+        defer { repo.cleanup() }
+
+        try repo.writeFile("Sources/A.swift", content: "let a = 1\n")
+        let sha = try repo.commit()
+
+        let reader = GitRefSourceReader(ref: "HEAD", resolvedSha: sha, repositoryRoot: repo.root)
+
+        #expect {
+            _ = try reader.read(file: "../outside.swift")
+        } throws: { error in
+            if case FileDiscoveryError.pathOutsideRepository = error {
+                return true
+            }
+            return false
+        }
+    }
+
     @Test("Given non-UTF8 blob, when reading, then returns raw bytes unchanged (G11)")
     func readsArbitraryBytes() throws {
         let repo = try GitRepositoryFixture()
