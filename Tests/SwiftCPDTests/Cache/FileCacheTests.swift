@@ -156,4 +156,155 @@ struct FileCacheTests {
         await cache.store(key: CacheKey(file: "A.swift"), entry: entry)
         await cache.save(to: tempDir)
     }
+
+    @Test("Given keys with same file but different resolvedSha, when stored, then coexist without collision")
+    func compositeKeysCoexist() async {
+        let cache = FileCache()
+        let workingTreeEntry = CacheEntry(
+            contentHash: "wt",
+            tokens: [Token(kind: .keyword, text: "wt", location: location)],
+            normalizedTokens: []
+        )
+        let refEntry = CacheEntry(
+            contentHash: "ref",
+            tokens: [Token(kind: .keyword, text: "ref", location: location)],
+            normalizedTokens: []
+        )
+
+        await cache.store(key: CacheKey(file: "A.swift"), entry: workingTreeEntry)
+        await cache.store(key: CacheKey(file: "A.swift", resolvedSha: "abc1234"), entry: refEntry)
+
+        let wtResult = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "wt")
+        let refResult = await cache.lookup(
+            key: CacheKey(file: "A.swift", resolvedSha: "abc1234"),
+            contentHash: "ref"
+        )
+
+        #expect(wtResult?.tokens.first?.text == "wt")
+        #expect(refResult?.tokens.first?.text == "ref")
+    }
+
+    @Test("Given keyed by resolvedSha, when looking up with different sha, then misses")
+    func resolvedShaIsolatesCache() async {
+        let cache = FileCache()
+        let entry = CacheEntry(
+            contentHash: "h",
+            tokens: [Token(kind: .keyword, text: "x", location: location)],
+            normalizedTokens: []
+        )
+
+        await cache.store(key: CacheKey(file: "A.swift", resolvedSha: "sha1"), entry: entry)
+
+        let sameSha = await cache.lookup(
+            key: CacheKey(file: "A.swift", resolvedSha: "sha1"),
+            contentHash: "h"
+        )
+        let otherSha = await cache.lookup(
+            key: CacheKey(file: "A.swift", resolvedSha: "sha2"),
+            contentHash: "h"
+        )
+
+        #expect(sameSha != nil)
+        #expect(otherSha == nil)
+    }
+
+    @Test("Given saved cache, when loading, then envelope round-trip preserves composite keys")
+    func envelopeRoundTrip() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cache_envelope_\(UUID().uuidString)")
+            .path
+
+        defer { try? FileManager.default.removeItem(atPath: tempDir) }
+
+        let entry = CacheEntry(
+            contentHash: "h",
+            tokens: [Token(kind: .keyword, text: "let", location: location)],
+            normalizedTokens: []
+        )
+
+        let writer = FileCache()
+        await writer.store(key: CacheKey(file: "A.swift", resolvedSha: "deadbeef"), entry: entry)
+        await writer.save(to: tempDir)
+
+        let raw = try Data(contentsOf: URL(fileURLWithPath: tempDir + "/cache.json"))
+        let json = try #require(try JSONSerialization.jsonObject(with: raw) as? [String: Any])
+
+        #expect(json["schemaVersion"] as? Int == 2)
+        let entries = try #require(json["entries"] as? [String: Any])
+        #expect(entries["deadbeef|A.swift"] != nil)
+
+        let reader = FileCache()
+        await reader.load(from: tempDir)
+        let result = await reader.lookup(
+            key: CacheKey(file: "A.swift", resolvedSha: "deadbeef"),
+            contentHash: "h"
+        )
+
+        #expect(result?.tokens.first?.text == "let")
+    }
+
+    @Test("Given a v1-format cache file on disk, when loading, then invalidates silently")
+    func v1FormatInvalidates() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cache_v1_\(UUID().uuidString)")
+            .path
+
+        try FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: tempDir) }
+
+        let v1Payload = """
+            {
+              "A.swift": {
+                "contentHash": "h",
+                "tokens": [],
+                "normalizedTokens": []
+              }
+            }
+            """
+        try v1Payload.write(
+            toFile: tempDir + "/cache.json",
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let cache = FileCache()
+        await cache.load(from: tempDir)
+        let result = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "h")
+
+        #expect(result == nil)
+    }
+
+    @Test("Given envelope with wrong schemaVersion, when loading, then invalidates")
+    func unknownSchemaVersionInvalidates() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cache_v99_\(UUID().uuidString)")
+            .path
+
+        try FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: tempDir) }
+
+        let payload = """
+            {
+              "schemaVersion": 99,
+              "entries": {
+                "A.swift": {
+                  "contentHash": "h",
+                  "tokens": [],
+                  "normalizedTokens": []
+                }
+              }
+            }
+            """
+        try payload.write(
+            toFile: tempDir + "/cache.json",
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let cache = FileCache()
+        await cache.load(from: tempDir)
+        let result = await cache.lookup(key: CacheKey(file: "A.swift"), contentHash: "h")
+
+        #expect(result == nil)
+    }
 }
