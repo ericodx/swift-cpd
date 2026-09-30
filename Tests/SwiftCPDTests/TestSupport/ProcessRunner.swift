@@ -34,6 +34,25 @@ func productsDirectory() -> URL {
         return bundle.bundleURL.deletingLastPathComponent()
     }
 
+    if let imagePath = loadedImagePath() {
+        var url = URL(fileURLWithPath: imagePath)
+        while url.pathExtension != "xctest", url.pathComponents.count > 1 {
+            url = url.deletingLastPathComponent()
+        }
+        if url.pathExtension == "xctest" {
+            return url.deletingLastPathComponent()
+        }
+    }
+
     return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        .appendingPathComponent(".build/arm64-apple-macosx/debug")
+        .appendingPathComponent(".build/debug")
+}
+
+private func loadedImagePath() -> String? {
+    let marker: @convention(c) () -> Void = {}
+    var info = Dl_info()
+    guard dladdr(unsafeBitCast(marker, to: UnsafeRawPointer.self), &info) != 0,
+        let name = info.dli_fname
+    else { return nil }
+    return String(cString: name)
 }
