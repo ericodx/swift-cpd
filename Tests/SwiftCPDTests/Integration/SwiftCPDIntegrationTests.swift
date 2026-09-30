@@ -413,6 +413,11 @@ struct SwiftCPDIntegrationTests {
         let resultAll = try runSwiftCPD(["--format", "json"] + minArgs + [tempDir])
         let resultFiltered = try runSwiftCPD(["--ignore-structural", "--format", "json"] + minArgs + [tempDir])
 
-        #expect(resultAll.stdout.count >= resultFiltered.stdout.count)
+        let allClones = try jsonClones(in: resultAll.stdout)
+        let filteredClones = try jsonClones(in: resultFiltered.stdout)
+
+        #expect(allClones.contains { ($0["type"] as? Int ?? 0) > 2 })
+        #expect(filteredClones.count < allClones.count)
+        #expect(filteredClones.allSatisfy { ($0["type"] as? Int ?? 0) <= 2 })
     }
 }
