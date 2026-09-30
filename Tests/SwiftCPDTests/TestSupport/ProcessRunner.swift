@@ -45,7 +45,7 @@ func productsDirectory() -> URL {
     }
 
     return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        .appendingPathComponent(".build/arm64-apple-macosx/debug")
+        .appendingPathComponent(".build/debug")
 }
 
 private func loadedImagePath() -> String? {
