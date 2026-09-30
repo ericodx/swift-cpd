@@ -2,7 +2,8 @@ import Foundation
 
 func runSwiftCPD(
     _ arguments: [String],
-    workingDirectory: String? = nil
+    workingDirectory: String? = nil,
+    timeout: TimeInterval = 60
 ) throws -> (stdout: String, stderr: String, exitCode: Int32) {
     let binPath = productsDirectory().appendingPathComponent("swift-cpd")
 
@@ -32,7 +33,17 @@ func runSwiftCPD(
     process.standardError = stderrHandle
 
     try process.run()
-    process.waitUntilExit()
+
+    let deadline = Date().addingTimeInterval(timeout)
+    while process.isRunning, Date() < deadline {
+        Thread.sleep(forTimeInterval: 0.01)
+    }
+
+    if process.isRunning {
+        process.terminate()
+        process.waitUntilExit()
+        throw ProcessTimeoutError(arguments: arguments, timeout: timeout)
+    }
 
     let stdoutData = try Data(contentsOf: stdoutURL)
     let stderrData = try Data(contentsOf: stderrURL)
