@@ -11,16 +11,31 @@ func runSwiftCPD(
     process.arguments = arguments
     process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory ?? NSTemporaryDirectory())
 
-    let stdoutPipe = Pipe()
-    let stderrPipe = Pipe()
-    process.standardOutput = stdoutPipe
-    process.standardError = stderrPipe
+    let outputDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SwiftCPDProcess-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: outputDirectory) }
+
+    let stdoutURL = outputDirectory.appendingPathComponent("stdout")
+    let stderrURL = outputDirectory.appendingPathComponent("stderr")
+    FileManager.default.createFile(atPath: stdoutURL.path, contents: nil)
+    FileManager.default.createFile(atPath: stderrURL.path, contents: nil)
+
+    let stdoutHandle = try FileHandle(forWritingTo: stdoutURL)
+    let stderrHandle = try FileHandle(forWritingTo: stderrURL)
+    defer {
+        try? stdoutHandle.close()
+        try? stderrHandle.close()
+    }
+
+    process.standardOutput = stdoutHandle
+    process.standardError = stderrHandle
 
     try process.run()
     process.waitUntilExit()
 
-    let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-    let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+    let stdoutData = try Data(contentsOf: stdoutURL)
+    let stderrData = try Data(contentsOf: stderrURL)
 
     return (
         stdout: String(data: stdoutData, encoding: .utf8) ?? "",
