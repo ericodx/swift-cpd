@@ -5,7 +5,7 @@ func runSwiftCPD(
     workingDirectory: String? = nil,
     timeout: TimeInterval = 60
 ) throws -> (stdout: String, stderr: String, exitCode: Int32) {
-    let binPath = productsDirectory().appendingPathComponent("swift-cpd")
+    let binPath = try swiftCPDExecutableURL()
 
     let process = Process()
     process.executableURL = binPath
@@ -55,30 +55,37 @@ func runSwiftCPD(
     )
 }
 
-func productsDirectory() -> URL {
-    if let bundle = Bundle.allBundles.first(where: { $0.bundlePath.hasSuffix(".xctest") }) {
-        return bundle.bundleURL.deletingLastPathComponent()
+/// Resolves the `swift-cpd` executable built alongside the test bundle.
+///
+/// The lookup does not depend on `Bundle.allBundles`: when the Swift Testing
+/// tests run through `swiftpm-testing-helper` no `.xctest` bundle is registered
+/// there, and a layout-specific fallback such as `.build/arm64-apple-macosx/debug`
+/// breaks with Swift 6.4's default build system, which places products under
+/// `.build/out/Products/Debug`. Instead, the package root is derived from
+/// `#filePath` and the executable is expected at `.build/debug/swift-cpd`:
+/// SwiftPM keeps `.build/debug` as a symlink to the active products directory
+/// in both layouts.
+func swiftCPDExecutableURL(filePath: String = #filePath) throws -> URL {
+    let binPath = packageRoot(from: filePath)
+        .appendingPathComponent(".build")
+        .appendingPathComponent("debug")
+        .appendingPathComponent("swift-cpd")
+
+    guard FileManager.default.isExecutableFile(atPath: binPath.path) else {
+        throw MissingExecutableError(path: binPath.path)
     }
 
-    if let imagePath = loadedImagePath() {
-        var url = URL(fileURLWithPath: imagePath)
-        while url.pathExtension != "xctest", url.pathComponents.count > 1 {
-            url = url.deletingLastPathComponent()
-        }
-        if url.pathExtension == "xctest" {
-            return url.deletingLastPathComponent()
-        }
-    }
-
-    return URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        .appendingPathComponent(".build/debug")
+    return binPath
 }
 
-private func loadedImagePath() -> String? {
-    let marker: @convention(c) () -> Void = {}
-    var info = Dl_info()
-    guard dladdr(unsafeBitCast(marker, to: UnsafeRawPointer.self), &info) != 0,
-        let name = info.dli_fname
-    else { return nil }
-    return String(cString: name)
+func packageRoot(from filePath: String) -> URL {
+    var url = URL(fileURLWithPath: filePath).deletingLastPathComponent()
+    while url.pathComponents.count > 1 {
+        let manifest = url.appendingPathComponent("Package.swift")
+        if FileManager.default.fileExists(atPath: manifest.path) {
+            return url
+        }
+        url = url.deletingLastPathComponent()
+    }
+    return url
 }
