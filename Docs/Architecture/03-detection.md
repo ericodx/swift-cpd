@@ -26,7 +26,7 @@ CloneGroup
 ├── type        — CloneType (1–4)
 ├── tokenCount  — length in tokens
 ├── lineCount   — length in lines
-├── similarity  — 100.0 for Type 1/2, percentage for Type 3/4
+├── similarity  — 100.0 for Type 1/2, percentage (one decimal) for Type 3/4
 └── fragments   — [CloneFragment] (exactly two per group)
 
 CloneFragment
@@ -82,7 +82,7 @@ flowchart TD
 
 ## Type 3 — Near-Miss Clones
 
-`Type3Detector` operates on **syntactic blocks** (functions, closures, control statements) rather than raw token streams. It uses a two-phase approach to keep the quadratic comparison cost manageable.
+`Type3Detector` operates on **syntactic blocks** (function, initializer and accessor bodies, and closures, found by `BlockVisitor`) rather than raw token streams. Blocks are mapped onto the file's normalized tokens, and only blocks with at least `minimumTokenCount` tokens are kept. It uses a two-phase approach to keep the quadratic comparison cost manageable.
 
 ```mermaid
 flowchart TD
@@ -103,7 +103,7 @@ flowchart TD
         D3 --> D4["similarity = 2 × covered / (|A| + |B|)"]
     end
 
-    D --> E["Keep pairs ≥ type3Similarity (70%)"]
+    D --> E["Keep pairs ≥ type3Similarity (70%)<br/>and ≥ minimumLineCount"]
     E --> F[CloneGroupDeduplicator]
 ```
 
@@ -144,7 +144,7 @@ flowchart TD
         E2 --> E3
     end
 
-    E --> F["Keep pairs ≥ type4Similarity (80%)"]
+    E --> F["Keep pairs ≥ type4Similarity (80%)<br/>and ≥ minimumLineCount"]
     F --> G[CloneGroupDeduplicator]
 ```
 
@@ -152,10 +152,10 @@ flowchart TD
 
 Captures observable program behavior without regard to syntax:
 
-- **Control flow shape** — ordered sequence of statement kinds (`if`, `guard`, `for`, `while`, `switch`, `do-catch`, `return`, `throw`, …)
+- **Control flow shape** — ordered sequence of statement kinds (`if`, `guard`, `switch`, `for`, `while`, `repeat`, `do-catch`, `return`, `throw`, `break`, `continue`)
 - **Data flow patterns** — how variables are defined and used (`defineAndUse`, `defineOnly`, `parameterUse`, `useOnly`)
 - **Called functions** — set of function names invoked
-- **Type signatures** — type annotations referenced
+- **Type signatures** — type names referenced (parameter types, return types and other type annotations)
 
 ### AbstractSemanticGraph (ASG)
 
@@ -163,19 +163,24 @@ A graph representation of control and data flow:
 
 | Node kind | Meaning |
 |---|---|
-| `conditional` | `if`, `guard`, `switch` |
+| `conditional` | `if` (without optional binding), `guard`, `switch` |
 | `loop` | `for`, `while`, `repeat`, `forEach` |
-| `returnValue` | `return` with value |
-| `guardExit` | `guard-else-return/throw` |
+| `returnValue` | `return` statement |
+| `guardExit` | `guard` whose body returns/throws, or `if !…` whose body returns/throws |
 | `optionalUnwrap` | `if let`, `guard let` |
 | `errorHandling` | `do-catch`, `throw` |
-| `collectionOperation` | `map`, `filter`, `reduce`, … |
-| `assignment` | variable binding |
-| `literalValue` | constant literal |
+| `collectionOperation` | `map`, `flatMap`, `compactMap`, `filter`, `reduce`, `sorted`, `contains`, `first`, … |
+| `assignment` | variable binding (`let` / `var` pattern) |
+| `literalValue` | integer, float, string or boolean literal |
 | `functionCall` | call expression |
 | `parameterInput` | function parameter |
 
 Edges carry a kind: `controlFlow` (sequential execution) or `dataFlow` (variable dependency).
+
+### Scoring weights
+
+- **Behavior similarity** (`BehaviorSignatureComparer`) = 0.4 × LCS ratio of control flow shapes + 0.3 × bag-Jaccard of data flow patterns + 0.2 × Jaccard of called functions + 0.1 × Jaccard of type signatures.
+- **Graph similarity** (`ASGComparer`) = 0.6 × bag-Jaccard of node kinds + 0.4 × LCS ratio of edge kinds.
 
 ---
 
