@@ -167,15 +167,15 @@ flowchart TD
 
 ```
 JsonReport
-├── metadata     — tool version, timestamp, execution time
-├── configuration — thresholds and flags used
-├── summary      — total clones, files, duplication %
-├── byType       — clone counts grouped by type
-└── clones[]
-    ├── type · similarity · tokenCount · lineCount
-    └── fragments[]
-        ├── file · startLine · endLine
-        └── preview  — source lines for context
+├── clones[]
+│   ├── id · type · similarity · tokenCount · lineCount
+│   └── fragments[]
+│       ├── file · startLine · endLine · startColumn · endColumn
+│       └── preview  — first source line of the fragment
+├── metadata     — thresholds used, execution time, files analyzed, timestamp, total tokens
+├── summary      — clone counts by type, duplicated lines/tokens, duplication %, total clones
+├── version      — tool version
+└── sourceRef · resolvedSha — only with --source-ref
 ```
 
 ---
