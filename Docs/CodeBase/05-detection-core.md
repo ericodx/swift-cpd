@@ -60,10 +60,10 @@ let similarity:  Double    // always 100.0 for Type 1/2; percentage for Type 3/4
 let fragments:   [CloneFragment]  // exactly two entries
 
 var isStructural: Bool { type == .type3 || type == .type4 }
-var isSameFile:   Bool  // true if both fragments are in the same file
+var isSameFile:   Bool  // true if all fragments are in the same file (false when empty)
 ```
 
-`CloneGroup` also has a failable initializer used by Type 3 and Type 4 detectors to apply the `minimumLineCount` filter during construction:
+`CloneGroup` also has a failable initializer (in an `extension`) used by Type 3 and Type 4 detectors to apply the `minimumLineCount` filter during construction:
 
 ```swift
 init?(
@@ -74,6 +74,8 @@ init?(
     minimumLineCount: Int
 )
 ```
+
+It builds both fragments with `CloneFragment(_:files:)`, sets `lineCount` to the larger fragment line span and returns `nil` if that is below `minimumLineCount`, sets `tokenCount` to the larger block token span, and converts `similarity` from a `0...1` fraction to a percentage rounded to one decimal place (`(similarity * 1000).rounded() / 10`).
 
 ### CloneFragment
 
@@ -97,8 +99,29 @@ Two convenience initializers (in an `extension`, to preserve the memberwise init
 // From raw token indices
 init(file: String, tokens: [Token], startIndex: Int, endIndex: Int)
 
-// From an IndexedBlock
+// From an IndexedBlock (uses files[indexed.fileIndex].tokens)
 init(_ indexed: IndexedBlock, files: [FileTokens])
+```
+
+Lines and `startColumn` come from the first and last tokens; `endColumn` is the last token's column plus its text length.
+
+---
+
+## Input Type
+
+### FileTokens
+
+```swift
+struct FileTokens: Sendable
+```
+
+The per-file input to every detector, produced by `AnalysisPipeline` (from a fresh tokenization or a cache hit).
+
+```swift
+let file:             String
+let source:           String   // full source text, re-parsed by block-based detectors
+let tokens:           [Token]  // raw tokens (after cross-language mapping and suppression)
+let normalizedTokens: [Token]  // tokens after TokenNormalizer
 ```
 
 ---
@@ -112,11 +135,11 @@ flowchart TD
     FT["FileTokens (source + tokens)"] --> BE["BlockExtractor"]
     BE --> BV["BlockVisitor (swift-syntax walk)"]
     BV --> LR["lineRanges [(start, end)]"]
-    LR --> CB["CodeBlock list"]
-    CB --> TI["mapToTokenRange (binary search)"]
-    TI --> IB["IndexedBlock list"]
-    IB --> filter["filter tokenCount ≥ minimumTokenCount"]
-    filter --> result["[IndexedBlock]"]
+    LR --> TI["mapToTokenRange (binary search + scan)"]
+    TI --> CB["CodeBlock list"]
+    CB --> filter["filter tokenCount ≥ minimumTokenCount"]
+    filter --> IB["IndexedBlock (block + fileIndex)"]
+    IB --> result["[IndexedBlock]"]
 ```
 
 ### BlockExtraction
@@ -126,7 +149,7 @@ enum BlockExtraction
 static func extractValidBlocks(files: [FileTokens], minimumTokenCount: Int) -> [IndexedBlock]
 ```
 
-Namespace that coordinates `BlockExtractor` across all files.
+Namespace that coordinates `BlockExtractor` across all files. Blocks are extracted against each file's `normalizedTokens`; blocks whose token span (`endTokenIndex - startTokenIndex + 1`) is below `minimumTokenCount` are dropped, and the rest are wrapped in `IndexedBlock` with their position in `files`.
 
 ### BlockExtractor
 
@@ -135,7 +158,7 @@ struct BlockExtractor: Sendable
 func extract(source: String, file: String, tokens: [Token]) -> [CodeBlock]
 ```
 
-Parses `source` with swift-syntax, runs `BlockVisitor` to get block line ranges, then maps each range to token indices using binary search (`O(log n)` per block).
+Parses `source` with swift-syntax, runs `BlockVisitor` to get block line ranges, then maps each range to token indices: a binary search finds the first token at or after `startLine`, then a linear scan extends to the last token on or before `endLine`. Ranges that contain no tokens are dropped.
 
 ### BlockVisitor
 
@@ -143,14 +166,19 @@ Parses `source` with swift-syntax, runs `BlockVisitor` to get block line ranges,
 final class BlockVisitor: SyntaxVisitor
 ```
 
-A swift-syntax `SyntaxVisitor` that records the line ranges of all extractable block constructs:
+A swift-syntax `SyntaxVisitor` (source-accurate view) that records the line ranges of all extractable block constructs:
 
-- `FunctionDeclSyntax` — free functions and methods
+- `FunctionDeclSyntax` — body of free functions and methods
 - `InitializerDeclSyntax` — `init` bodies
-- `AccessorDeclSyntax` — `get`, `set`, `willSet`, `didSet`
-- `ClosureExprSyntax` — closures
+- `AccessorDeclSyntax` — `get`, `set`, `willSet`, `didSet` bodies
+- `ClosureExprSyntax` — the whole closure expression
+
+Declarations without a body are skipped. The visitor always continues into children, so nested blocks are recorded too.
 
 ```swift
+init(converter: SourceLocationConverter)
+
+let converter:  SourceLocationConverter
 var lineRanges: [(startLine: Int, endLine: Int)]
 ```
 
@@ -214,7 +242,7 @@ enum CloneGroupDeduplicator
 static func deduplicate(_ clones: [CloneGroup]) -> [CloneGroup]
 ```
 
-Removes clones that are entirely covered by another clone in the same list. Two groups are considered duplicates when both their fragments are subsumed (same file, and the token range of one pair is a subset of the other). Used by `Type3Detector` and `Type4Detector` after scoring.
+Removes clones that are covered by a clone kept earlier in the list (order-dependent, first one wins). A clone is subsumed by another when, pairing fragments positionally, each fragment is in the same file and its `startLine...endLine` lies within the other's line range. Used by `Type3Detector` and `Type4Detector` after scoring.
 
 ---
 
