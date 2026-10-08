@@ -52,7 +52,7 @@ struct JsonReporterTests {
         let data = try #require(output.data(using: .utf8))
         let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
 
-        #expect(json["version"] as? String == "1.0.0")
+        #expect(json["version"] as? String == Version.current)
 
         let metadata = try #require(json["metadata"] as? [String: Any])
         #expect(metadata["filesAnalyzed"] as? Int == 5)
