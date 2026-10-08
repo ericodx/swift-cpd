@@ -24,7 +24,7 @@
 The plugin is a **build tool plugin**: Xcode runs it as a build phase before compiling. It invokes `swift-cpd` with the `--format xcode` flag, which produces one line per clone fragment in the format Xcode's build system recognises as a diagnostic:
 
 ```
-/path/to/File.swift:42:1: warning: Clone detected (Type 2, 120 tokens, 15 lines, 100.0% similarity)
+/path/to/File.swift:42:1: warning: Clone detected (Type-2, 120 tokens, 15 lines) — also in OtherFile.swift:17
 ```
 
 A small empty marker file is written to the plugin's work directory so Xcode knows the command completed. On subsequent builds, Xcode skips the plugin if no source files changed (incremental build support).
