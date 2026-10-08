@@ -78,25 +78,26 @@ Human-readable console output. Designed for interactive use.
 Produces a structured JSON document. Suitable for CI integration and tooling.
 
 ```
-JsonReport
-├── metadata       — JsonMetadata
-│   ├── version    — tool version string
-│   ├── timestamp  — ISO 8601
-│   └── executionTime
-├── configuration  — JsonConfiguration (thresholds and flags used)
-├── summary        — JsonSummary
-│   ├── totalClones
+JsonReport                      (keys encoded in sorted order)
+├── clones[]          — [JsonClone]
+│   ├── id · type · similarity · tokenCount · lineCount
+│   └── fragments[]   — [JsonFragment]
+│       ├── file · startLine · endLine · startColumn · endColumn
+│       └── preview   — first source line, plus " ... }" for multi-line fragments
+├── metadata          — JsonMetadata
+│   ├── configuration — JsonConfiguration (minimumTokenCount · minimumLineCount)
+│   ├── executionTimeMs
 │   ├── filesAnalyzed
-│   ├── totalTokens
-│   └── duplicationPercentage
-├── byType         — JsonByType (clone counts per type)
-├── sourceRef      — present only when --source-ref is set
-├── resolvedSha    — present only when --source-ref is set
-└── clones[]       — [JsonClone]
-    ├── type · similarity · tokenCount · lineCount
-    └── fragments[]
-        ├── file · startLine · endLine · startColumn · endColumn
-        └── preview   — source lines read from disk
+│   ├── timestamp     — ISO 8601
+│   └── totalTokens
+├── summary           — JsonSummary
+│   ├── byType        — JsonByType (clone counts per type)
+│   ├── duplicatedLines · duplicatedTokens
+│   ├── duplicationPercentage
+│   └── totalClones
+├── version           — tool version string (Version.current)
+├── sourceRef         — present only when --source-ref is set
+└── resolvedSha       — present only when --source-ref is set
 ```
 
 `sourceRef` and `resolvedSha` are encoded via `encodeIfPresent` — when absent, they are omitted from the output entirely. Existing consumers that don't know about them are unaffected.
