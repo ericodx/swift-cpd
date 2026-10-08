@@ -43,7 +43,7 @@ protocol SourceFileLister: Sendable
 func listFiles(in paths: [String]) throws -> [String]
 ```
 
-Returns absolute paths sorted deterministically.
+Returns absolute paths sorted deterministically. Relative input paths are resolved against the current working directory by the filesystem lister and against the repository root by the git lister.
 
 ### SourceReader
 
@@ -94,9 +94,10 @@ init(
 )
 ```
 
-- For named refs/shas: runs `git ls-tree -r <resolvedSha> -- <paths>`.
-- For `:0` (the index): runs `git ls-files --stage -- <paths>`.
+- For named refs/shas: runs `git ls-tree -r <resolvedSha> -- <path>` once per input path.
+- For `:0` (the index): runs `git ls-files --stage -- <path>` once per input path.
 - Skips submodule entries (mode `160000`) with a warning to stderr.
+- Applies the same extension filter and `GlobMatcher` exclusions as the filesystem lister, then returns the de-duplicated, sorted absolute paths.
 
 ```swift
 struct GitRefSourceReader: SourceReader
@@ -116,10 +117,10 @@ flowchart TD
     paths["Configuration.paths"] --> SFD["SourceFileDiscovery"]
     SFD --> item{Item type?}
     item -- symlink --> skip[Skip]
-    item -- directory --> excl{"GlobMatcher\n.matches?"}
+    item -- directory --> excl{"Excluded name or\nGlobMatcher.matches?"}
     excl -- yes --> prune["skipDescendants() + Skip"]
     excl -- no --> item
-    item -- file --> excl2{"GlobMatcher\n.matches?"}
+    item -- file --> excl2{"Excluded name or\nGlobMatcher.matches?"}
     excl2 -- yes --> skip
     excl2 -- no --> ext{Extension?}
     ext -- .swift --> result["[String] file paths"]
@@ -144,16 +145,23 @@ init(crossLanguageEnabled: Bool, excludePatterns: [String] = [])
 func findSourceFiles(in paths: [String]) throws -> [String]
 ```
 
-Throws `FileDiscoveryError.pathDoesNotExist(String)` if any path in `paths` does not exist on disk.
+Throws `FileDiscoveryError.pathDoesNotExist(String)` if any path in `paths` does not exist on disk. Relative paths are resolved against `FileManager.default.currentDirectoryPath`.
+
+Each input path is handled according to its type:
+
+- **Directory** — enumerated recursively (see rules below).
+- **File** — included if its extension is valid. Exclusion patterns and always-excluded names are **not** applied to a file passed directly as an input path.
 
 ### Rules
 
 - **Included extensions:** `.swift` always; `.m`, `.mm`, `.h`, `.c`, `.cpp` when `crossLanguageEnabled` is `true`.
-- **Always-excluded directories** (skipped during enumeration):
+- **Always-excluded names** (any enumerated entry with this last path component is skipped, and a directory is pruned):
   - `.build` · `.git` · `DerivedData` · `Pods` · `Carthage` · `SourcePackages`
-- **Pattern exclusions:** files whose path matches any entry in `excludePatterns` via `GlobMatcher`.
-- **Symlinks:** never followed.
-- The returned array is sorted for deterministic processing order.
+- **Hidden entries** (names starting with `.`) and **package contents** (bundle-like directories) are skipped by the enumerator (`.skipsHiddenFiles`, `.skipsPackageDescendants`).
+- **Pattern exclusions:** enumerated files and directories whose absolute path matches any entry in `excludePatterns` via `GlobMatcher`. A matching directory is pruned with `skipDescendants()`.
+- Exclusions apply only to entries found **during enumeration**: an input directory itself is never tested, so `--exclude Sources/Generated` has no effect when `Sources/Generated` is one of the input paths.
+- **Symlinks:** entries that are symbolic links are skipped, never followed.
+- The returned array is sorted for deterministic processing order (it is not de-duplicated).
 
 ---
 
@@ -170,17 +178,34 @@ init(patterns: [String])
 func matches(_ filePath: String) -> Bool
 ```
 
-Patterns support `*` (any characters within a path component) and `**` (any number of path components). A file is excluded if it matches **any** pattern in the list.
+Each pattern is compiled into a regular expression:
+
+| Glob | Regex | Meaning |
+|---|---|---|
+| `**/` | `(.+/)?` | Zero or more leading path components |
+| `**` (elsewhere) | `.*` | Any characters, including `/` |
+| `*` | `[^/]*` | Any characters within a single path component |
+| `?` | `[^/]` | Exactly one character other than `/` |
+| `.` `(` `)` `+` `^` `$` `\|` `{` `}` | escaped | Matched literally |
+
+Other characters (including `[` and `]`) are passed through to the regex unchanged. A pattern that does not compile into a valid regex (e.g. `[invalid`) is silently dropped. A path is excluded if it matches **any** pattern in the list.
 
 ### Matching semantics
 
-- **Absolute patterns** (starting with `/`): matched against the full absolute path anchored at the start.
-- **Relative patterns** (not starting with `/`): matched at path-component boundaries anywhere in the absolute path. `Sources/Foo/Bar` matches `/Users/project/Sources/Foo/Bar/File.swift`.
-- **Directory patterns** (ending with `/`): match the directory itself and all files within it. `Sources/Generated/` matches both the directory URL and any file inside it, enabling early pruning via `enumerator.skipDescendants()`.
+- **Basename patterns** (no `/` anywhere in the pattern, e.g. `*.generated.swift`): matched against the last path component only.
+- **Absolute patterns** (starting with `/`): matched against the full path anchored at the start.
+- **Relative patterns** (containing `/`, not starting with `/`): matched starting at any path-component boundary, and must match through to the **end** of the path. `Sources/Generated.swift` matches `/Users/project/Sources/Generated.swift`; `Sources/Foo/Bar` matches the directory `/Users/project/Sources/Foo/Bar` (which the filesystem walk then prunes) but not the file `/Users/project/Sources/Foo/Bar/File.swift` on its own.
+- **Directory patterns** (ending with `/`): the trailing slash is dropped and the pattern matches the directory itself and anything below it. `Sources/Generated/` matches both the directory path and any file inside it, so it works in working-tree mode (early pruning via `enumerator.skipDescendants()`) and in git-ref mode (where only file paths are tested).
 
 ### CompiledPattern
 
-An internal type that pre-compiles a glob string into a `NSRegularExpression` for efficient repeated matching. Not part of the public API.
+```swift
+struct CompiledPattern: Sendable
+let regex: NSRegularExpression
+let basenameOnly: Bool
+```
+
+A plain value holding one pattern's pre-compiled `NSRegularExpression` and whether it is matched against the basename only. `GlobMatcher.init(patterns:)` builds one per valid pattern.
 
 ---
 
