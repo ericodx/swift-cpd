@@ -3,7 +3,7 @@
 ## Requirements
 
 - macOS 15 or later
-- Xcode 16 or later (for building from source or using the Xcode plugin)
+- Xcode 26 or later (for building from source or using the Xcode plugin)
 - Swift 6.2 or later (for building from source)
 
 ---
@@ -21,7 +21,7 @@ Verify the installation:
 
 ```bash
 swift-cpd --version
-# swift-cpd 1.0.0 [arm64-macos15]
+# swift-cpd 1.5.0 [arm64-macos15]
 ```
 
 ### Updating
@@ -45,7 +45,7 @@ Pre-built binaries are published with every release on the [GitHub Releases page
 
 ```bash
 # Replace X.Y.Z with the desired version
-VERSION="1.0.0"
+VERSION="1.5.0"
 curl -L "https://github.com/ericodx/swift-cpd/releases/download/v${VERSION}/swift-cpd-v${VERSION}-macos.tar.gz" \
   | tar -xz
 
@@ -110,7 +110,7 @@ Create or edit `.pre-commit-config.yaml` in your repository root:
 ```yaml
 repos:
   - repo: https://github.com/ericodx/swift-cpd
-    rev: v1.0.0   # replace with the desired version tag
+    rev: v1.5.0   # replace with the desired version tag
     hooks:
       - id: swift-cpd
 ```
@@ -126,15 +126,27 @@ From this point on, `swift-cpd` runs automatically whenever you `git commit`. If
 ### Running manually
 
 ```bash
-pre-commit run swift-cpd          # run on staged files only
-pre-commit run swift-cpd --all-files  # run on the entire repository
+pre-commit run swift-cpd              # run if Swift files are staged
+pre-commit run swift-cpd --all-files  # run regardless of what is staged
 ```
 
 ### Configuration
 
-The hook respects `.swift-cpd.yml` in the repository root. Place your configuration there to control thresholds, excluded paths, and enabled clone types. See the [Usage & Configuration Guide](usage.md) for all available options.
+The hook respects `.swift-cpd.yml` in the repository root. Place your configuration there to control thresholds, excluded paths, and enabled clone types. See the [Usage & Configuration Guide](USAGE.md) for all available options.
 
-> **Note:** The hook uses `pass_filenames: false` — it always analyzes the paths defined in `.swift-cpd.yml` (or the default discovery), not just the files staged for the commit.
+> **Note:** The hook uses `pass_filenames: false` — it always analyzes the paths defined in `.swift-cpd.yml`, not just the files staged for the commit. Run `swift-cpd init` first (or pass paths through `args`); without paths the hook fails.
+
+> **Note:** The hook is declared with `language: swift`, so pre-commit builds `swift-cpd` from source the first time it runs. A Swift 6.2 or later toolchain must be available.
+
+To analyze exactly what is about to be committed (the index) instead of the working tree, pass `--source-ref`:
+
+```yaml
+    hooks:
+      - id: swift-cpd
+        args: [--source-ref, ":0"]
+```
+
+See [Reading from a git ref](USAGE.md#reading-from-a-git-ref---source-ref) for details.
 
 ---
 
