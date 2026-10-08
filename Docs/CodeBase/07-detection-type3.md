@@ -26,6 +26,8 @@ var supportedCloneTypes: Set<CloneType> { [.type3] }
 func detect(files: [FileTokens]) -> [CloneGroup]
 ```
 
+Both thresholds are percentages (`0–100`) and are divided by `100` before being compared against similarity scores in `0.0–1.0`.
+
 ### Pipeline
 
 ```mermaid
@@ -48,6 +50,8 @@ flowchart TD
     C --> D["CloneGroupDeduplicator.deduplicate"]
 ```
 
+Every unordered pair of blocks (`first < second`) is fingerprinted and compared — the pre-filter is quadratic in the number of valid blocks. Both the fingerprints and the GST token slices are taken from `FileTokens.normalizedTokens` over the inclusive range `startTokenIndex ... endTokenIndex`.
+
 ### Type3CandidatePair
 
 ```swift
@@ -55,6 +59,8 @@ struct Type3CandidatePair
 let blockA: IndexedBlock
 let blockB: IndexedBlock
 ```
+
+A pair that survived the Jaccard pre-filter. Accepted pairs are wrapped in an `IndexedBlockPair` when the `CloneGroup` is built.
 
 ---
 
@@ -67,7 +73,7 @@ struct BlockFingerprint: Sendable, Equatable
 A token-frequency map used as a cheap approximation of block similarity before running the more expensive GST algorithm.
 
 ```swift
-init(tokens: [Token], startIndex: Int, endIndex: Int)
+init(tokens: [Token], startIndex: Int, endIndex: Int)   // inclusive range
 
 let tokenFrequencies: [String: Int]   // token text → occurrence count
 
@@ -101,7 +107,7 @@ static func calculate<T: Hashable>(_ elementsA: [T], _ elementsB: [T]) -> Double
 static func calculate<T: Hashable>(_ frequenciesA: [T: Int], _ frequenciesB: [T: Int]) -> Double
 ```
 
-Both return `1.0` when both inputs are empty.
+Both return `1.0` when both inputs are empty. The array overload is also used by `BehaviorSignatureComparer` (data flow patterns) and `ASGComparer` (node kinds) — see [Detection — Type 4](08-detection-type4.md).
 
 ---
 
@@ -113,28 +119,32 @@ init(minimumTileSize: Int = 5)
 func similarity(between tokensA: [Token], and tokensB: [Token]) -> Double
 ```
 
-Implements the **Greedy String Tiling (GST)** algorithm. Finds the largest non-overlapping matching substrings (tiles) between two token sequences.
+Implements the **Greedy String Tiling (GST)** algorithm. Finds the largest non-overlapping matching substrings (tiles) between two token sequences. Tokens are compared by `text`.
 
 ```
 similarity = 2 × Σ tile.length / (|tokensA| + |tokensB|)
 ```
 
-Returns `1.0` for identical inputs, `0.0` for no overlap.
+Returns `0.0` when both inputs are empty or no tile of at least `minimumTileSize` tokens exists. Identical inputs of at least `minimumTileSize` tokens score `1.0`.
 
 ### Algorithm
 
 ```mermaid
 flowchart TD
     A["tokensA, tokensB"] --> B["GreedyTilingState (markedA, markedB)"]
-    B --> C["Find longest unmarked matching tile ≥ minimumTileSize"]
-    C --> D{Any tile found?}
-    D -- no --> E["Compute similarity"]
-    D -- yes --> F["Mark all tokens in tile"]
-    F --> G["totalCovered += tile.length"]
-    G --> C
+    B --> C["findLongestMatches: collect every unmarked match of the maximal length (≥ minimumTileSize)"]
+    C --> D["applyMatches: for each match, skip it if any token is already marked"]
+    D --> F["Mark all tokens in the tile, totalCovered += tile.length"]
+    F --> G{Any tile applied?}
+    G -- yes --> C
+    G -- no --> E["Compute similarity"]
 ```
 
+Each iteration scans all unmarked `(indexA, indexB)` start positions, so a single pass is `O(|A| × |B| × tile length)`.
+
 ### GreedyTilingState
+
+Declared in `TilingState.swift`.
 
 ```swift
 struct GreedyTilingState
@@ -142,7 +152,7 @@ init(sizeA: Int, sizeB: Int)
 
 var markedA: [Bool]     // which tokens in A are already covered
 var markedB: [Bool]     // which tokens in B are already covered
-var totalCovered: Int   // running sum of covered tokens
+var totalCovered: Int = 0   // running sum of covered tokens
 ```
 
 ### TileMatch

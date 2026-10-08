@@ -2,7 +2,7 @@
 
 `SwiftCPDPlugin` integrates clone detection directly into the Xcode build system. After installation, every build runs `swift-cpd` automatically and surfaces clones as **yellow warning triangles** inline in the source editor — no terminal required.
 
-**Requirements:** macOS 15 or later, Xcode 16 or later.
+**Requirements:** macOS 15 or later, Xcode 26 or later, and a Swift 6.2 or later toolchain (the package declares `swift-tools-version: 6.2`).
 
 ---
 
@@ -21,13 +21,22 @@
 
 ## How it works
 
-The plugin is a **build tool plugin**: Xcode runs it as a build phase before compiling. It invokes `swift-cpd` with the `--format xcode` flag, which produces one line per clone fragment in the format Xcode's build system recognises as a diagnostic:
+The plugin is a **build tool plugin**: Xcode runs it as a build phase before compiling. It invokes `swift-cpd` with the `--format xcode` flag, which prints one line per clone fragment to stdout in the format Xcode's build system recognises as a diagnostic:
 
 ```
-/path/to/File.swift:42:1: warning: Clone detected (Type 2, 120 tokens, 15 lines, 100.0% similarity)
+/path/to/File.swift:42:1: warning: Clone detected (Type-2, 120 tokens, 15 lines) — also in OtherFile.swift:17
 ```
 
-A small empty marker file is written to the plugin's work directory so Xcode knows the command completed. On subsequent builds, Xcode skips the plugin if no source files changed (incremental build support).
+What gets analyzed depends on how the plugin is attached:
+
+| Setup | Directory passed to `swift-cpd` |
+|---|---|
+| Xcode project (`.xcodeproj`) | The whole project directory (the folder containing the `.xcodeproj`), regardless of which target the plugin is attached to |
+| SPM package (`Package.swift`) | The source directory of the target the plugin is attached to |
+
+A small empty marker file (`swift-cpd.marker`) is written to the plugin's work directory and declared as the command's only output, so the build system knows the command completed. The plugin declares no input files; when the command is re-run is decided by the build system. The token cache is also kept in the plugin's work directory (`--cache-dir <pluginWorkDirectory>/cache`), not in your project.
+
+With `--format xcode`, warnings never fail the build: after a successful analysis `swift-cpd` exits with code `0`, and `maxDuplication` is not enforced.
 
 ---
 
@@ -101,7 +110,7 @@ targets: [
 ]
 ```
 
-The plugin is applied per-target. Add it to every target you want to monitor.
+The plugin is applied per-target and analyzes only that target's source directory. Add it to every target you want to monitor.
 
 ### Step 3 — Build
 
@@ -121,13 +130,18 @@ The first build after installation takes longer than usual because:
 2. Xcode compiles `swift-cpd` and its `swift-syntax` dependency (~1–2 minutes).
 3. `swift-cpd` analyzes your source files for the first time and writes the token cache.
 
-Subsequent builds are fast. The plugin is skipped entirely when no source files have changed. When files do change, only the analysis step runs — the tool binary is already compiled and the cache is warm.
+Subsequent builds are faster: the tool binary is already compiled, and unchanged files are served from the token cache in the plugin's work directory.
 
 ---
 
 ## Configuring the plugin
 
-The plugin respects a `.swift-cpd.yml` file placed in the **project root** (the directory that contains your `.xcodeproj` or `Package.swift`).
+`swift-cpd` reads `.swift-cpd.yml` from its **current working directory**. The plugin does not pass `--config` and does not set a working directory, so place the file in the **project root** (the directory that contains your `.xcodeproj` or `Package.swift`); it is applied when the build system launches the tool from that directory.
+
+Some keys have no effect through the plugin, because the plugin passes them on the command line and CLI values take precedence:
+
+- `paths:` — the plugin always passes the directory to analyze (see [How it works](#how-it-works)).
+- `outputFormat:` — always `xcode`.
 
 Generate a starter config:
 
@@ -157,7 +171,7 @@ minimumTokenCount: 70
 minimumLineCount: 7
 ```
 
-> **Note:** The plugin analyzes the entire project directory (`context.xcodeProject.directoryURL`). The `exclude:` list is the primary way to restrict the scope to your own source code.
+> **Note:** In an Xcode project the plugin analyzes the entire project directory (`context.xcodeProject.directoryURL`). The `exclude:` list is the primary way to restrict the scope to your own source code. `.build`, `.git`, `DerivedData`, `Pods`, `Carthage`, `SourcePackages` and hidden directories are always skipped.
 
 ---
 
@@ -256,16 +270,21 @@ minimumLineCount: 3
 
 ### Warnings appear in unexpected files
 
-The Xcode plugin passes the entire project directory to `swift-cpd`. Use `exclude:` patterns in `.swift-cpd.yml` to narrow the scope:
+The Xcode plugin passes the entire project directory to `swift-cpd`. `.build`, `.git`, `DerivedData`, `Pods`, `Carthage` and `SourcePackages` directories, as well as hidden directories, are already skipped. Use `exclude:` patterns in `.swift-cpd.yml` to narrow the scope further:
 
 ```yaml
 exclude:
-  - "**/Pods/**"
-  - "**/Carthage/**"
-  - "**/.build/**"
-  - "**/DerivedData/**"
+  - "**/Generated/**"
+  - "**/Vendor/**"
+  - "**/*.generated.swift"
 ```
+
+Patterns without a `/` (such as `*.generated.swift`) match the file name only; a trailing `/` (such as `Generated/`) matches a directory and everything inside it.
+
+### Build fails with "No source files found in the specified paths."
+
+`swift-cpd` exits with an error when the analyzed directory contains no `.swift` files after exclusions (or no `.m`, `.mm`, `.h`, `.c`, `.cpp` files either, when `crossLanguageEnabled` is set). Check that your `exclude:` patterns do not match every source file, or remove the plugin from targets without Swift sources.
 
 ### Build is slow after every change
 
-Ensure your `.swift-cpd.yml` is in the project root so the cache is reused across builds. If the cache directory is being cleaned (e.g. by a `Clean Build Folder`), this is expected — the cache will be warm again after the next build.
+The plugin stores the token cache in its own work directory inside the build folder (`--cache-dir <pluginWorkDirectory>/cache`), so it is reused across builds automatically. A **Clean Build Folder** removes it; this is expected — the cache will be warm again after the next build. Make sure `noCache: true` is not set in `.swift-cpd.yml`.

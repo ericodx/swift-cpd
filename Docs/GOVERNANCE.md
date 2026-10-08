@@ -14,3 +14,5 @@ All contributions must follow [CONTRIBUTING.md](../CONTRIBUTING.md).
 ## Releases
 
 Releases are made at the maintainer’s discretion.
+
+Each release is tagged `vX.Y.Z`. The Release workflow (`.github/workflows/release.yml`) builds the binary in release mode and attaches `swift-cpd-vX.Y.Z-macos.tar.gz` to the corresponding [GitHub release](https://github.com/ericodx/swift-cpd/releases).

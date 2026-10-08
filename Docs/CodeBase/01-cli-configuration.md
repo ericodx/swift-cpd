@@ -33,7 +33,9 @@ Parses `CommandLine.arguments` into a `ParsedArguments` value. Throws `ArgumentP
 func parse(_ arguments: [String]) throws -> ParsedArguments
 ```
 
-All numeric arguments are parsed and range-validated here. Boolean flags default to `false`; value arguments default to `nil` (meaning "use YAML or built-in default").
+The first element (the executable name) is dropped. Every argument that does not start with `--` is a positional: the literal `init` sets `showInit`, anything else is appended to `paths`. Flags may appear in any order and value flags consume the next argument.
+
+Numeric arguments are parsed here, but only `--max-duplication` is range-checked at this stage (`0...100`); the ranges of the other numeric options are validated later by `Configuration`. Boolean flags default to `false`; value arguments default to `nil` (meaning "use YAML or built-in default").
 
 ### Supported flags
 
@@ -64,6 +66,25 @@ All numeric arguments are parsed and range-validated here. Boolean flags default
 | `--version` | flag | Print version and exit |
 | `--help` | flag | Print help and exit |
 | `init` | command | Generate `.swift-cpd.yml` |
+
+`--types` accepts `all` or a comma-separated list of `1`–`4` (whitespace around items is trimmed). `--exclude` may be repeated; every pattern is appended to `excludePatterns`.
+
+### ArgumentParsingError
+
+```swift
+enum ArgumentParsingError: Error, Sendable, Equatable
+```
+
+| Case | Message |
+|---|---|
+| `.unknownFlag(flag)` | `unknown flag '<flag>'` |
+| `.missingValue(flag)` | `missing value for '<flag>'` |
+| `.invalidIntegerValue(value, flag)` | `invalid integer value '<value>' for '<flag>'` |
+| `.invalidFormatValue(value)` | `invalid format '<value>', expected: text, json, html, xcode` |
+| `.invalidDuplicationValue(value)` | `invalid duplication value '<value>', expected a number between 0 and 100` |
+| `.invalidTypesValue(value)` | `invalid types value '<value>', expected comma-separated list of: 1, 2, 3, 4` |
+
+`SwiftCPD.main` prints parsing errors as `error: <message>` to stderr and exits with `.configurationError`.
 
 ---
 
@@ -118,7 +139,40 @@ The single source of truth for a run. Constructed by merging `ParsedArguments` a
 init(from parsed: ParsedArguments, yaml: YamlConfiguration? = nil) throws
 ```
 
-Throws `ConfigurationError` when `paths` is empty after merging.
+Merge rules that differ from the plain `CLI ?? YAML ?? default` pattern:
+
+| Field | Rule |
+|---|---|
+| `paths` | CLI paths if any were given, otherwise YAML `paths` |
+| `excludePatterns` | CLI patterns followed by YAML `exclude` (concatenated) |
+| `crossLanguageEnabled`, `ignoreSameFile`, `ignoreStructural`, `noCache` | `CLI flag || YAML value` — a CLI flag can only enable, never disable |
+| `outputFormat` | YAML `outputFormat` strings that are not a valid `OutputFormat` are ignored (fall back to `.text`) |
+| `enabledCloneTypes` | YAML integers that are not a valid `CloneType` are dropped |
+| `sourceRef` | An empty string (from CLI or YAML) becomes `nil` |
+| `maxDuplication` | The `0...100` check happens only in `ArgumentParser`; a YAML value is not range-checked |
+| `outputFilePath`, `baselineFilePath`, `cacheDirectory`, `baselineMode` | CLI only; there is no YAML key |
+
+### ConfigurationError
+
+```swift
+enum ConfigurationError: Error, Sendable, Equatable {
+    case noPathsSpecified
+    case parameterOutOfRange(name: String, value: Int, validRange: ClosedRange<Int>)
+}
+```
+
+`noPathsSpecified` is thrown when `paths` is empty after merging. After merging, `validate()` checks the numeric ranges and throws `parameterOutOfRange` for the first value outside its range:
+
+| Field | Valid range |
+|---|---|
+| `minimumTokenCount` | `10...500` |
+| `minimumLineCount` | `2...100` |
+| `type3Similarity` | `50...100` |
+| `type3TileSize` | `2...20` |
+| `type3CandidateThreshold` | `10...80` |
+| `type4Similarity` | `60...100` |
+
+`SwiftCPD.main` prints the error followed by the usage text and exits with `.configurationError`.
 
 ### Fields and defaults
 
@@ -140,13 +194,66 @@ Throws `ConfigurationError` when `paths` is empty after merging.
 | `excludePatterns` | `[String]` | `[]` |
 | `inlineSuppressionTag` | `String` | `"swiftcpd:ignore"` |
 | `enabledCloneTypes` | `Set<CloneType>` | all four types |
-| `ignoreSameFile` | `Bool` | `true` |
-| `ignoreStructural` | `Bool` | `true` |
+| `ignoreSameFile` | `Bool` | `false` |
+| `ignoreStructural` | `Bool` | `false` |
 | `noCache` | `Bool` | `false` |
 | `cacheDirectory` | `String` | `.swift-cpd-cache` |
 | `sourceRef` | `String?` | `nil` |
 
+`baselineFilePath` always has a value, but it is only consulted when `baselineMode` is not `.none`. `cacheDirectory` is relative to the current working directory unless an absolute path is given.
+
 When `sourceRef` is non-nil, `SwiftCPD.runAnalysis` resolves it via `GitRefResolver` and builds `GitRefSourceFileLister` + `GitRefSourceReader` instead of the filesystem variants. An empty string is treated as `nil` (reads the working tree). See the [Reading from a git ref](../USAGE.md#reading-from-a-git-ref---source-ref) section of USAGE for user-facing behavior.
+
+---
+
+## YAML Configuration
+
+```swift
+struct YamlConfiguration: Sendable, Equatable
+struct YamlConfigurationLoader: Sendable
+struct YamlConfigurationParser: Sendable
+```
+
+`SwiftCPD.loadYamlConfiguration` uses `YamlConfigurationLoader.load(from:)` when `--config <path>` is given (the file must exist) and `loadIfExists(from: ".swift-cpd.yml")` otherwise, which returns `nil` when the default file is absent. An empty or whitespace-only file yields a `YamlConfiguration` with every field `nil`.
+
+`YamlConfiguration` mirrors the configurable settings; every field is optional:
+
+| YAML key | Type | Maps to |
+|---|---|---|
+| `paths` | list of strings | `paths` |
+| `minimumTokenCount` | `Int` | `minimumTokenCount` |
+| `minimumLineCount` | `Int` | `minimumLineCount` |
+| `outputFormat` | `String` | `outputFormat` |
+| `maxDuplication` | `Double` | `maxDuplication` |
+| `type3Similarity` | `Int` | `type3Similarity` |
+| `type3TileSize` | `Int` | `type3TileSize` |
+| `type3CandidateThreshold` | `Int` | `type3CandidateThreshold` |
+| `type4Similarity` | `Int` | `type4Similarity` |
+| `crossLanguageEnabled` | `Bool` | `crossLanguageEnabled` |
+| `exclude` | list of strings | `excludePatterns` |
+| `inlineSuppressionTag` | `String` | `inlineSuppressionTag` |
+| `enabledCloneTypes` | list of `Int` | `enabledCloneTypes` |
+| `ignoreSameFile` | `Bool` | `ignoreSameFile` |
+| `ignoreStructural` | `Bool` | `ignoreStructural` |
+| `noCache` | `Bool` | `noCache` |
+| `sourceRef` | `String` | `sourceRef` |
+
+`YamlConfigurationParser` is a minimal line-based parser, not a general YAML implementation:
+
+- Each non-empty line is either `key: value`, `key:` (starts a block list), `key: []` (empty list) or `- item` (appends to the current list). Indentation is ignored.
+- Inline lists other than `[]` and a `- item` without a preceding list key are rejected.
+- A line starting with `#` is a comment, and everything from the first ` #` (space followed by `#`) on a line is stripped; matching single or double quotes around a value are removed.
+- Booleans accept `true`/`false`/`yes`/`no` (case-insensitive). Integer, double and boolean keys with an unparseable value are rejected.
+- Unknown keys are ignored.
+
+`YamlConfigurationError` reports failures:
+
+| Case | Message |
+|---|---|
+| `.fileNotReadable(path)` | `cannot read configuration file '<path>'` |
+| `.invalidYaml(path)` | `invalid YAML in configuration file '<path>'` |
+
+Both are printed by `SwiftCPD.main` as `error: <message>` and exit with `.configurationError`.
 
 ---
 
@@ -174,9 +281,11 @@ enum BaselineMode: Sendable, Equatable
 | Case | Triggered by | Behaviour |
 |---|---|---|
 | `.none` | _(default)_ | Report all clones |
-| `.generate` | `--baseline-generate` | Save current clones as baseline, exit 0 |
-| `.update` | `--baseline-update` | Overwrite baseline with current clones, exit 0 |
-| `.compare` | Baseline file exists | Report only clones absent from baseline |
+| `.generate` | `--baseline-generate` | Save current clones to `baselineFilePath`, exit 0 |
+| `.update` | `--baseline-update` | Overwrite `baselineFilePath` with current clones (no merge), exit 0 |
+| `.compare` | `--baseline <path>` without generate/update | Report only clones absent from the baseline; a missing file counts as an empty baseline |
+
+`resolveBaselineMode` checks the flags in order: `--baseline-generate` wins over `--baseline-update`, which wins over `--baseline <path>`.
 
 ### ExitCode
 
@@ -186,10 +295,10 @@ enum ExitCode: Int32, Sendable
 
 | Case | Value | Meaning |
 |---|---|---|
-| `.success` | `0` | No clones, or duplication below threshold |
-| `.clonesDetected` | `1` | Clones found above threshold |
-| `.configurationError` | `2` | Invalid arguments or YAML |
-| `.analysisError` | `3` | Runtime error during analysis |
+| `.success` | `0` | No clones; duplication at or below `maxDuplication` when set; always for `--format xcode` outside baseline comparison; baseline generate/update; `init`, `--help`, `--version` |
+| `.clonesDetected` | `1` | Clones found (new clones in `.compare` mode); with `maxDuplication`, only when the percentage exceeds it |
+| `.configurationError` | `2` | Invalid arguments, out-of-range values, unreadable or invalid YAML, no paths, no source files found, `init` when `.swift-cpd.yml` exists |
+| `.analysisError` | `3` | Any error thrown during analysis (missing path, git ref errors, baseline I/O, tokenization), or `init` failing to write the file |
 
 ---
 
@@ -199,7 +308,7 @@ enum ExitCode: Int32, Sendable
 struct SourcePathDiscovery
 ```
 
-Used by the `init` command to populate the `paths:` field of the generated `.swift-cpd.yml` automatically.
+Used by the `init` command to populate the `paths:` field of the generated `.swift-cpd.yml` automatically. `SwiftCPD.handleInit` refuses to overwrite an existing `.swift-cpd.yml` (exit `2`) and otherwise writes a template with the discovered `paths`, `minimumTokenCount: 50`, `minimumLineCount: 5`, `outputFormat: text`, `type3Similarity: 70`, `type4Similarity: 80`, `exclude: []`, `ignoreSameFile: true`, `ignoreStructural: true`, `enabledCloneTypes` 1–4 and a commented-out `# noCache: true`.
 
 ```swift
 func discover(in rootPath: String = ".") -> [String]
@@ -209,7 +318,7 @@ func discover(in rootPath: String = ".") -> [String]
 
 1. If `Sources/` exists at `rootPath` → returns `["Sources/"]` (SPM layout).
 2. Scans top-level directories of `rootPath` for any that contain `.swift` files (recursive).
-3. Excludes: `.build`, `.git`, `.swiftpm`, `DerivedData`, `Pods`, `Carthage`, `vendor`, `Packages`, `build`, `Build`.
+3. Skips names starting with `.` and the excluded set: `.build`, `.git`, `.swiftpm`, `.Trash`, `build`, `Build`, `DerivedData`, `Pods`, `Carthage`, `vendor`, `Packages`.
 4. Returns sorted list of discovered directories with trailing `/`.
 5. If nothing found → falls back to `["Sources/"]`.
 

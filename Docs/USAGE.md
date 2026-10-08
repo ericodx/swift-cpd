@@ -47,27 +47,49 @@ swift-cpd
 ### First-time output (text format)
 
 ```
-Clone detected — Type 2 | 18 lines | 142 tokens | 100.0% similarity
-  Sources/MyApp/Networking/UserService.swift  :  45 –  62
-  Sources/MyApp/Networking/ProductService.swift :  91 – 108
+Found 2 clone(s) in 47 files (1.30s)
 
-Clone detected — Type 3 | 24 lines | 198 tokens | 73.4% similarity
-  Sources/MyApp/ViewModels/ListViewModel.swift  :  12 –  35
-  Sources/MyApp/ViewModels/DetailViewModel.swift :  18 –  41
+Clone 1 (Type-2, 142 tokens, 18 lines):
+  Sources/MyApp/Networking/UserService.swift:45-62
+  Sources/MyApp/Networking/ProductService.swift:91-108
 
-──────────────────────────────────────────────────
-2 clone(s) found in 47 file(s) — 4.2% duplication — 1.3s
+Clone 2 (Type-3, 198 tokens, 24 lines):
+  Sources/MyApp/ViewModels/ListViewModel.swift:12-35
+  Sources/MyApp/ViewModels/DetailViewModel.swift:18-41
 ```
 
 ---
 
 ## Configuration File
 
-`swift-cpd` looks for `.swift-cpd.yml` in the current directory by default. Generate a starter file with:
+`swift-cpd` looks for `.swift-cpd.yml` in the current directory by default. If the file is absent, built-in defaults are used. Generate a starter file with:
 
 ```bash
 swift-cpd init
 ```
+
+`init` writes `.swift-cpd.yml` in the current directory and refuses to overwrite an existing one (it prints `error: .swift-cpd.yml already exists.` and exits `2`). `paths:` is filled automatically: `Sources/` when that directory exists; otherwise every non-hidden top-level directory that contains `.swift` files (skipping build and dependency folders such as `.build`, `build`, `DerivedData`, `Pods`, `Carthage`, `vendor`, `Packages`); `Sources/` again if nothing is found. The generated file contains:
+
+```yaml
+paths:
+  - Sources/
+minimumTokenCount: 50
+minimumLineCount: 5
+outputFormat: text
+type3Similarity: 70
+type4Similarity: 80
+exclude: []
+ignoreSameFile: true
+ignoreStructural: true
+enabledCloneTypes:
+  - 1
+  - 2
+  - 3
+  - 4
+# noCache: true
+```
+
+Note that the generated file enables `ignoreSameFile` and `ignoreStructural`, while the built-in defaults for both are `false`.
 
 ### Full reference
 
@@ -91,6 +113,7 @@ minimumLineCount: 5
 
 # Clone types to detect. Remove entries to skip specific detectors.
 # Type 1/2: exact/parameterized (fast). Type 3: near-miss. Type 4: semantic.
+# Default when the key is absent: all four types.
 enabledCloneTypes:
   - 1
   - 2
@@ -118,17 +141,19 @@ type4Similarity: 80
 # ── Output ────────────────────────────────────────────────────────────────────
 
 # Output format: text | json | html | xcode
+# An unrecognized value silently falls back to text.
 outputFormat: text
 
 # ── Filters ──────────────────────────────────────────────────────────────────
 
-# Ignore clones where both fragments are in the same file.
+# Ignore clones where all fragments are in the same file. Default: false.
 ignoreSameFile: true
 
-# Ignore Type 3 and Type 4 (structural/semantic) clones.
+# Ignore Type 3 and Type 4 (structural/semantic) clones. Default: false.
 ignoreStructural: true
 
-# Glob patterns for files to exclude. Evaluated against the full file path.
+# Glob patterns for files to exclude. Patterns without a / match the file or
+# directory name only; patterns containing a / are evaluated against the full path.
 # Relative patterns match at path-component boundaries anywhere in the absolute path.
 # Patterns ending with / exclude that directory and all files within it.
 exclude:
@@ -155,8 +180,8 @@ inlineSuppressionTag: swiftcpd:ignore
 
 # ── CI quality gate ───────────────────────────────────────────────────────────
 
-# Exit with code 1 if the duplication percentage exceeds this value.
-# Remove this key to disable the quality gate.
+# Exit with code 1 only if the duplication percentage exceeds this value (0–100).
+# Remove this key to disable the quality gate (any clone then exits 1).
 maxDuplication: 5.0
 
 # ── Git ref source ────────────────────────────────────────────────────────────
@@ -168,19 +193,39 @@ maxDuplication: 5.0
 # sourceRef: HEAD
 ```
 
+### Supported YAML syntax
+
+The configuration file is read by a minimal built-in parser, not a full YAML implementation:
+
+- Only top-level `key: value` pairs. Unknown keys are ignored.
+- Lists must use block style (`- item` on separate lines); the only inline list accepted is the empty list `[]`. Inline lists such as `[1, 2]` are rejected.
+- Values may be wrapped in single or double quotes. Booleans accept `true`/`false`/`yes`/`no` (case-insensitive).
+- Comments start with `#` at the beginning of a line or with ` #` (space, then `#`) anywhere after it, including inside quoted values.
+
+A malformed file, or a numeric/boolean key with an invalid value, fails with `error: invalid YAML in configuration file '<path>'` and exit code `2`.
+
 ### Precedence
 
-When a value is set in both the CLI and the YAML file, the CLI value always wins.
+When a value is set in both the CLI and the YAML file, the CLI value wins.
 
 ```
 CLI argument  >  .swift-cpd.yml  >  built-in default
 ```
+
+Exceptions to the simple override rule:
+
+- **Paths**: paths given on the CLI replace `paths:` entirely.
+- **Exclude patterns**: `--exclude` patterns are *added* to the YAML `exclude:` list, not substituted.
+- **Boolean flags** (`--ignore-same-file`, `--ignore-structural`, `--cross-language`, `--no-cache`) can only turn a feature on. When the YAML sets one of them to `true`, there is no CLI flag to turn it back off.
+- **CLI-only settings**: `--output`, `--baseline`, `--baseline-generate`, `--baseline-update`, `--cache-dir` and `--config` have no YAML key.
 
 The `--config` flag lets you point to a different YAML file:
 
 ```bash
 swift-cpd --config ci/swift-cpd-strict.yml Sources/
 ```
+
+Unlike the default `.swift-cpd.yml`, a file passed with `--config` must exist; otherwise the run fails with `error: cannot read configuration file '<path>'` and exit code `2`.
 
 ---
 
@@ -190,7 +235,7 @@ swift-cpd --config ci/swift-cpd-strict.yml Sources/
 
 ```bash
 swift-cpd init                   # generate .swift-cpd.yml in the current directory
-swift-cpd --version              # print version and platform info
+swift-cpd --version              # print version and platform, e.g. swift-cpd 1.5.0 [arm64-macos15]
 swift-cpd --help                 # print usage summary
 ```
 
@@ -200,7 +245,9 @@ swift-cpd --help                 # print usage summary
 swift-cpd [options] [paths...]
 ```
 
-Paths on the CLI override `paths:` in the YAML file. When no paths are given, the YAML file must specify them.
+Paths on the CLI override `paths:` in the YAML file. When no paths are given, the YAML file must specify them. Paths may be directories (scanned recursively) or individual files. A path that does not exist fails the run with exit code `3`; paths that contain no supported source files fail with `error: No source files found in the specified paths.` and exit code `2`.
+
+Numeric options are range-checked after the CLI and YAML values are merged; an out-of-range value prints an error followed by the usage text and exits `2`.
 
 ### All options
 
@@ -210,11 +257,12 @@ Paths on the CLI override `paths:` in the YAML file. When no paths are given, th
 | `--min-lines <N>` | `5` | 2–100 | Minimum clone length in lines |
 | `--types <list>` | `all` | `1,2,3,4` or `all` | Clone types to detect |
 | `--format <fmt>` | `text` | `text json html xcode` | Output format |
-| `--output <path>` | stdout | — | Write output to a file |
+| `--output <path>` | stdout | — | Write the report to a file instead of stdout (with `--format xcode`, see [xcode](#xcode)) |
 | `--exclude <pattern>` | — | glob | Exclude matching files (repeatable) |
-| `--ignore-same-file` | true | — | Skip clones within one file |
-| `--ignore-structural` | true | — | Skip Type 3 and Type 4 clones |
+| `--ignore-same-file` | false | — | Skip clones whose fragments are all in one file |
+| `--ignore-structural` | false | — | Skip Type 3 and Type 4 clones |
 | `--no-cache` | false | — | Disable tokenization cache |
+| `--cache-dir <path>` | `.swift-cpd-cache` | — | Directory for the tokenization cache |
 | `--cross-language` | false | — | Include Objective-C/C files |
 | `--suppression-tag <tag>` | `swiftcpd:ignore` | — | Custom suppression comment tag |
 | `--max-duplication <N>` | — | 0–100 | Fail if duplication % exceeds N |
@@ -223,10 +271,18 @@ Paths on the CLI override `paths:` in the YAML file. When no paths are given, th
 | `--type3-candidate-threshold <N>` | `30` | 10–80 | Type 3 Jaccard pre-filter |
 | `--type4-similarity <N>` | `80` | 60–100 | Type 4 semantic similarity threshold |
 | `--baseline-generate` | — | — | Save current clones as baseline |
-| `--baseline-update` | — | — | Overwrite existing baseline |
-| `--baseline <path>` | `.swift-cpd-baseline.json` | — | Compare against baseline at path |
+| `--baseline-update` | — | — | Overwrite the baseline with current clones |
+| `--baseline <path>` | `.swift-cpd-baseline.json` | — | Baseline file; on its own, compare against it |
 | `--config <path>` | `.swift-cpd.yml` | — | Use a specific config file |
 | `--source-ref <ref>` | — | git ref | Read sources from a git ref (see below) |
+| `--version` | — | — | Print version and exit |
+| `--help` | — | — | Print usage and exit |
+
+`--types` accepts a comma-separated list of `1`–`4` (e.g. `1,2`) or `all`.
+
+### Cache
+
+Tokenization results are cached in `cache.json` inside `.swift-cpd-cache/` (relative to the current directory) and reused for files whose content hash is unchanged. Use `--cache-dir <path>` to place the cache elsewhere, or `--no-cache` (`noCache: true` in YAML) to skip both reading and writing the cache.
 
 ### Common invocations
 
@@ -240,8 +296,11 @@ swift-cpd Sources/ Plugins/
 # Only exact and parameterized clones (fast, no semantic analysis)
 swift-cpd --types 1,2 Sources/
 
-# Strict: report same-file clones, include structural clones
+# Strict: find smaller clones
 swift-cpd --min-tokens 30 --min-lines 3 Sources/
+
+# Only cross-file Type 1/2 clones
+swift-cpd --ignore-same-file --ignore-structural Sources/
 
 # Exclude test files and generated code
 swift-cpd --exclude "**/*Tests*" --exclude "**/*.generated.swift" Sources/
@@ -306,6 +365,8 @@ Two recipes that side-step this:
 - **Reads the canonical blob bytes.** Smudge filters (`core.autocrlf`, `ident`, custom clean/smudge) are *not* applied. If the working tree differs from the blob due to those filters, that divergence is intentional with `--source-ref`.
 - **Submodules are skipped** with a warning to stderr — their tree entries point at a commit, not source content.
 - **Empty `--source-ref ""` is treated as unset** (reads the working tree).
+- **Relative paths are resolved against the repository root**, not the current directory. Run from the repository root (or pass absolute paths) to avoid surprises.
+- **Exclude patterns and `--cross-language`** apply to the files listed from the ref, as they do for the working tree.
 - **Cache is namespaced by resolved sha.** Mutable refs like `HEAD` or `main` reuse the cache across runs as long as the underlying sha is unchanged. When the ref moves, the cache misses for that file.
 
 ### Output additions
@@ -329,11 +390,14 @@ When `--source-ref` is set, reports surface the ref in their header:
 
 ### Errors you may see
 
+All of these are printed as `error: <message>` and exit with code `3`.
+
 | Message | Cause |
 |---|---|
 | `notARepository(...)` | Current directory is not inside a git repo |
 | `unknownRef(ref: "...")` | `git rev-parse --verify` rejected the ref |
 | `gitExecutableNotFound` | `git` is not on PATH |
+| `gitCommandFailed(...)` | A `git ls-tree`/`ls-files`/`cat-file` call exited with a non-zero status |
 | `pathDoesNotExistInRef(...)` | A `paths:` entry has no matches in the ref's tree |
 | `pathOutsideRepository(...)` | A path points outside the repository root |
 
@@ -350,10 +414,14 @@ swift-cpd --format text Sources/
 ```
 
 ```
-Clone detected — Type 1 | 10 lines | 82 tokens | 100.0% similarity
-  Sources/App/Cache/DiskCache.swift      :  14 –  23
-  Sources/App/Cache/MemoryCache.swift    :  31 –  40
+Found 1 clone(s) in 47 files (1.24s)
+
+Clone 1 (Type-1, 82 tokens, 10 lines):
+  Sources/App/Cache/DiskCache.swift:14-23
+  Sources/App/Cache/MemoryCache.swift:31-40
 ```
+
+When nothing is found, the output is a single line: `No clones detected in 47 files (1.24s)`.
 
 ### json
 
@@ -365,42 +433,55 @@ swift-cpd --format json --output report.json Sources/
 
 ```json
 {
-  "metadata": {
-    "version": "swift-cpd 1.0.0 [arm64-macos15]",
-    "timestamp": "2026-03-13T14:00:00Z",
-    "executionTime": 1.24
-  },
-  "summary": {
-    "totalClones": 2,
-    "filesAnalyzed": 47,
-    "totalTokens": 18430,
-    "duplicationPercentage": 4.2
-  },
-  "byType": { "type1": 1, "type2": 1, "type3": 0, "type4": 0 },
   "clones": [
     {
-      "type": 1,
-      "similarity": 100.0,
-      "tokenCount": 82,
-      "lineCount": 10,
       "fragments": [
         {
+          "endColumn": 6,
+          "endLine": 23,
           "file": "Sources/App/Cache/DiskCache.swift",
-          "startLine": 14, "endLine": 23,
-          "startColumn": 5, "endColumn": 1,
-          "preview": "    func store(_ value: ...\n    ..."
+          "preview": "func store(_ value: Data, for key: String) { ... }",
+          "startColumn": 5,
+          "startLine": 14
         },
         {
+          "endColumn": 6,
+          "endLine": 40,
           "file": "Sources/App/Cache/MemoryCache.swift",
-          "startLine": 31, "endLine": 40,
-          "startColumn": 5, "endColumn": 1,
-          "preview": "    func store(_ value: ...\n    ..."
+          "preview": "func store(_ value: Data, for key: String) { ... }",
+          "startColumn": 5,
+          "startLine": 31
         }
-      ]
+      ],
+      "id": "clone-001",
+      "lineCount": 10,
+      "similarity": 100,
+      "tokenCount": 82,
+      "type": 1
     }
-  ]
+  ],
+  "metadata": {
+    "configuration": {
+      "minimumLineCount": 5,
+      "minimumTokenCount": 50
+    },
+    "executionTimeMs": 1240,
+    "filesAnalyzed": 47,
+    "timestamp": "2026-03-13T14:00:00Z",
+    "totalTokens": 18430
+  },
+  "summary": {
+    "byType": { "type1": 1, "type2": 0, "type3": 0, "type4": 0 },
+    "duplicatedLines": 10,
+    "duplicatedTokens": 82,
+    "duplicationPercentage": 0.4,
+    "totalClones": 1
+  },
+  "version": "swift-cpd 1.5.0 [arm64-macos15]"
 }
 ```
+
+Keys are sorted alphabetically. `version` is the same string `swift-cpd --version` prints. `preview` is the first line of the fragment, followed by ` ... }` when the fragment spans more than one line. `sourceRef` and `resolvedSha` are added only when `--source-ref` is set (see [Reading from a git ref](#reading-from-a-git-ref---source-ref)).
 
 ### html
 
@@ -415,13 +496,15 @@ open report.html
 
 One diagnostic per fragment in the format Xcode recognizes as a build warning. Used automatically by the build plugin; rarely needed from the CLI directly.
 
+With `--format xcode` the diagnostics are always printed to stdout and the run always exits `0`, even when clones are found or `--max-duplication` is exceeded, so that the build is never failed. If `--output <path>` is given, an empty marker file is written at that path (creating parent directories) instead of the report; the build plugin uses it as its declared output. The exception is baseline comparison (`--baseline <path>`), which writes the report like any other format and applies the normal exit codes.
+
 ```bash
 swift-cpd --format xcode Sources/
 ```
 
 ```
-/path/to/DiskCache.swift:14:5: warning: Clone detected (Type 1, 82 tokens, 10 lines, 100.0% similarity)
-/path/to/MemoryCache.swift:31:5: warning: Clone detected (Type 1, 82 tokens, 10 lines, 100.0% similarity)
+/path/to/DiskCache.swift:14:5: warning: Clone detected (Type-1, 82 tokens, 10 lines) — also in MemoryCache.swift:31
+/path/to/MemoryCache.swift:31:5: warning: Clone detected (Type-1, 82 tokens, 10 lines) — also in DiskCache.swift:14
 ```
 
 ---
@@ -439,7 +522,7 @@ swift-cpd --baseline-generate Sources/
 # Baseline generated with 5 clone(s) at .swift-cpd-baseline.json
 ```
 
-Commit `.swift-cpd-baseline.json` to source control.
+Commit `.swift-cpd-baseline.json` to source control. Pass `--baseline <path>` together with `--baseline-generate` (or `--baseline-update`) to write the file somewhere else. These modes only write the baseline and print the confirmation line; no report is produced.
 
 ### Step 2 — Compare against the baseline
 
@@ -450,35 +533,32 @@ swift-cpd --baseline .swift-cpd-baseline.json Sources/
 # Only clones not present in the baseline are printed
 ```
 
-Exit code is `0` if no new clones are found, `1` if there are new ones.
+Exit code is `0` if no new clones are found, `1` if there are new ones. With `--max-duplication`, the threshold is applied to the new clones only. If the baseline file does not exist, it is treated as empty and every clone is reported as new.
+
+A clone matches a baseline entry only when its type, token count, line count and every fragment's file and line range are identical, so moving duplicated code to different lines makes it appear as new. File paths are stored as absolute paths, so a baseline only matches when the comparison runs from the same checkout location where it was generated (for example, generate and compare on the same CI runner layout).
 
 ### Step 3 — Update the baseline
 
-After intentionally accepting new clones (e.g. after a refactor):
+After intentionally accepting new clones (e.g. after a refactor), regenerate the file. `--baseline-update` does not merge with the existing entries; it overwrites the file with the clones found in the current run:
 
 ```bash
 swift-cpd --baseline-update Sources/
 # Baseline updated with 7 clone(s) at .swift-cpd-baseline.json
 ```
 
-### YAML equivalent
-
-```yaml
-# .swift-cpd.yml — always compare against the baseline in CI
-baseline: .swift-cpd-baseline.json
-```
-
-> **Note:** `--baseline-generate` and `--baseline-update` always exit `0`. Use them in a separate step from the comparison run.
+> **Note:** the baseline options are CLI-only; there is no YAML key for them. `--baseline-generate` and `--baseline-update` exit `0` whenever the file is written successfully. Use them in a separate step from the comparison run.
 
 ---
 
 ## Inline Suppression
 
-Suppress specific code regions by adding a comment with the suppression tag immediately before the block or on the line to suppress.
+Suppress specific code regions by adding a comment with the suppression tag on its own line, immediately before the code to suppress. Tokens on suppressed lines are removed before detection runs.
+
+The comment must be the first thing on its line (leading whitespace is allowed), start with `//` or `/*`, and the tag must be the first text inside the comment. Trailing comments such as `let x = 1 // swiftcpd:ignore` are **not** recognized. Blank lines between the comment and the code are skipped.
 
 ### Block suppression
 
-Suppresses everything inside the following `{...}` block, including nested braces:
+When the next non-blank line contains a `{`, everything from that line through the matching closing `}` is suppressed, including nested braces (the opening brace must be on that line):
 
 ```swift
 // swiftcpd:ignore
@@ -501,10 +581,11 @@ class GeneratedMapper {
 
 ### Line suppression
 
-When the tag is not immediately before a block, only that line is suppressed:
+When the next non-blank line does not contain a `{`, only that line is suppressed:
 
 ```swift
-let boilerplate = buildGenericHeader() // swiftcpd:ignore
+// swiftcpd:ignore
+let boilerplate = buildGenericHeader()
 ```
 
 ### Custom tag
@@ -560,15 +641,7 @@ swift-cpd --max-duplication 3 Sources/ || {
 
 ### SonarQube
 
-Generate a JSON report and point the SonarQube scanner at it:
-
-```yaml
-- name: Generate CPD report
-  run: swift-cpd --format json --output cpd-report.json Sources/
-
-- name: Run SonarQube scan
-  run: sonar-scanner -Dsonar.swift.cpd.reportPaths=cpd-report.json
-```
+`swift-cpd` has no SonarQube-specific output format, and its JSON report uses its own schema (see [json](#json)) rather than a format SonarQube imports. To track duplication alongside a SonarQube analysis, run `swift-cpd` as a separate quality gate step and keep the JSON or HTML report as a build artifact, as in the [GitHub Actions](#github-actions) example above.
 
 ---
 
@@ -592,11 +665,11 @@ The `SwiftCPDPlugin` runs `swift-cpd` automatically during the build and surface
 2. Click **+** → **Add Build Tool Plug-in**
 3. Select **SwiftCPDPlugin**
 
-The plugin uses `--format xcode` so every clone fragment appears as a yellow warning triangle inline in the source editor.
+The plugin uses `--format xcode` so every clone fragment appears as a yellow warning triangle inline in the source editor. Because the Xcode format always exits `0`, clones never fail the build.
 
 ### Plugin configuration
 
-The plugin respects `.swift-cpd.yml` in the project root. Place the file there and the plugin picks it up automatically on the next build.
+The plugin runs `swift-cpd --format xcode --cache-dir <plugin work dir>/cache --output <plugin work dir>/swift-cpd.marker <dir>`, where `<dir>` is the target's source directory (SPM) or the Xcode project directory. It does not pass `--config`, so `swift-cpd` loads `.swift-cpd.yml` from the working directory the build system runs it in. Because the plugin always passes a path, `paths:` in the YAML file is ignored; use `exclude:` to narrow the scope.
 
 To suppress a region in plugin runs:
 
@@ -613,10 +686,10 @@ func boilerplate() {
 
 | Code | Constant | Meaning |
 |---|---|---|
-| `0` | `success` | No clones, or duplication below `maxDuplication` |
-| `1` | `clonesDetected` | Clones found (or duplication above threshold) |
-| `2` | `configurationError` | Invalid argument, YAML parse error, no paths specified |
-| `3` | `analysisError` | Runtime error during analysis (file unreadable, etc.) |
+| `0` | `success` | No clones; or duplication at or below `maxDuplication` when it is set; always for `--format xcode` (outside baseline comparison), `--baseline-generate`, `--baseline-update`, `init`, `--help` and `--version` |
+| `1` | `clonesDetected` | Clones found (new clones only in baseline comparison). When `maxDuplication` is set, only when the duplication percentage exceeds it |
+| `2` | `configurationError` | Unknown flag or invalid value, value out of range, unreadable or invalid YAML file, no paths specified, no source files found, `init` when `.swift-cpd.yml` already exists |
+| `3` | `analysisError` | Runtime error: a path that does not exist, a `--source-ref` error, an unreadable or invalid baseline file, a failure while reading or tokenizing sources, `init` failing to write the file |
 
 Use exit codes in shell scripts:
 

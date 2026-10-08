@@ -18,7 +18,7 @@ flowchart TD
     RDR -->|"git cat-file blob &lt;sha&gt;:&lt;path&gt;"| GIT
 ```
 
-The git layer is composed of seven types, each in its own file:
+The git layer is composed of eight types and one free function, each in its own file:
 
 | Type | Responsibility |
 |---|---|
@@ -42,10 +42,10 @@ enum SourceRefError: Error, Equatable, Sendable
 
 | Case | Trigger |
 |---|---|
-| `.gitExecutableNotFound` | `git` is missing from `PATH` (spawn fails or `env` returns 127) |
-| `.notARepository(workingDirectory:)` | `git rev-parse --show-toplevel` fails — caller is not inside a repo |
-| `.unknownRef(ref:)` | `git rev-parse --verify <ref>` rejects the ref |
-| `.gitCommandFailed(command:, exitCode:, stderr:)` | A git subcommand exited non-zero (anything other than the above) |
+| `.gitExecutableNotFound` | `git` is missing from `PATH` (`env` exits with 127), or the process cannot be spawned at all (e.g. the working directory does not exist) |
+| `.notARepository(workingDirectory:)` | `git rev-parse --show-toplevel` exits non-zero — caller is not inside a repo |
+| `.unknownRef(ref:)` | `git rev-parse --verify --quiet <ref>` exits non-zero |
+| `.gitCommandFailed(command:, exitCode:, stderr:)` | The listing (`ls-tree` / `ls-files`) or `cat-file` command exited non-zero. `command` is a human-readable description such as `git ls-tree -r <sha> -- <path>` or `git cat-file blob <sha>:<path>` |
 
 ---
 
@@ -63,9 +63,9 @@ func run(args: [String], workingDirectory: String) throws -> ProcessOutput
 ```
 
 - Executes `/usr/bin/env git <args...>` from the given working directory.
-- If `Process.run()` itself throws → `SourceRefError.gitExecutableNotFound`.
+- If `Process.run()` itself throws (including when `workingDirectory` does not exist) → `SourceRefError.gitExecutableNotFound`.
 - If exit code is `127` (env-couldn't-find-git) → `SourceRefError.gitExecutableNotFound`.
-- Otherwise returns the captured stdout, stderr, and exit code.
+- Otherwise returns the captured stdout, stderr (decoded as UTF-8, empty if undecodable), and exit code. A non-zero exit code is **not** an error at this level — callers decide how to map it.
 
 ```swift
 struct GitProcessRunner.ProcessOutput: Sendable
@@ -87,10 +87,10 @@ func resolve(ref: String, in workingDirectory: String) throws -> Resolved
 Resolves a user-provided ref to a stable identifier:
 
 1. `git rev-parse --show-toplevel` from the working directory → repository root.
-   - Fails with `notARepository` if not inside a repo.
+   - Fails with `notARepository(workingDirectory:)` on a non-zero exit.
 2. If `ref == ":0"` → returns the literal `:0` as the resolved sha (the index has no single sha).
-3. Otherwise `git rev-parse --verify --quiet <ref>` → 40-char sha.
-   - Fails with `unknownRef(ref:)` on any non-zero exit or empty stdout.
+3. Otherwise `git rev-parse --verify --quiet <ref>`, run from the repository root → the full object name (trimmed stdout).
+   - Fails with `unknownRef(ref:)` on a non-zero exit.
 
 ```swift
 struct GitRefResolver.Resolved: Equatable, Sendable
@@ -121,11 +121,22 @@ func listFiles(in paths: [String]) throws -> [String]
 For each input path:
 
 1. Convert to repo-relative via `repositoryRelativePath(for:in:)`. Out-of-repo paths throw `FileDiscoveryError.pathOutsideRepository`.
-2. Run the listing command:
+2. Run the listing command from the repository root:
    - Named ref / sha: `git ls-tree -r <resolvedSha> -- <relativePath>`
    - Index (`resolvedSha == ":0"`): `git ls-files --stage -- <relativePath>`
-3. Empty output → `FileDiscoveryError.pathDoesNotExistInRef(path:, ref:)`.
-4. Parse each line into a `TreeEntry`, skip submodules (mode `160000`) with a warning to the injected `stderr` closure, filter by extension and `excludePatterns` via `GlobMatcher`, and return absolute paths.
+   - When the input path is the repository root itself (empty relative path), the `-- <relativePath>` scope is omitted.
+   - Non-zero exit → `SourceRefError.gitCommandFailed(...)`.
+3. No entries → `FileDiscoveryError.pathDoesNotExistInRef(path:, ref:)` (with the original input path and the user-provided ref).
+4. Parse each line into a `TreeEntry` (lines without a tab are ignored), skip submodules (mode `160000`) with the warning `swift-cpd: skipping submodule '<path>' at <ref>` sent to the injected `stderr` closure, keep only `.swift` files (plus `.m`, `.mm`, `.h`, `.c`, `.cpp` when `crossLanguageEnabled`), and drop files whose absolute path (`repositoryRoot + "/" + path`) matches `excludePatterns` via `GlobMatcher`.
+5. Return the absolute paths de-duplicated and sorted.
+
+Exclusion is evaluated against **file paths only** (there is no directory enumeration to prune). A pattern that names a directory without a trailing slash, such as `Sources/Generated`, therefore excludes nothing in git mode; use `Sources/Generated/` or `Sources/Generated/**` instead. See [GlobMatcher](02-file-discovery.md#globmatcher).
+
+```swift
+func parseEntry(_ line: Substring) -> TreeEntry?
+```
+
+Internal (not `private`) so tests can exercise it directly. Splits the line at the first tab: the path is everything after it, the mode is the first space-separated field before it. Returns `nil` if there is no tab or no mode.
 
 ```swift
 struct GitRefSourceFileLister.TreeEntry: Equatable, Sendable
@@ -146,7 +157,7 @@ func read(file: String) throws -> Data
 ```
 
 1. Convert `file` to repo-relative via `repositoryRelativePath(for:in:)`.
-2. Run `git cat-file blob <resolvedSha>:<relativePath>`.
+2. Run `git cat-file blob <resolvedSha>:<relativePath>` from the repository root (with the index, the spec becomes `:0:<relativePath>`).
 3. Non-zero exit → `SourceRefError.gitCommandFailed(...)` with the git stderr verbatim — typically because the file does not exist at the ref.
 
 The reader returns raw bytes without assuming UTF-8; the `AnalysisPipeline` decodes when it needs a `String`.
@@ -161,8 +172,9 @@ func repositoryRelativePath(for input: String, in repositoryRoot: String) throws
 
 Free function shared by the reader and the lister. Behavior:
 
-- Absolute or relative `input` is resolved to an absolute path.
+- An absolute `input` is used as-is; a relative `input` is resolved against `repositoryRoot` (not the current working directory).
 - Both sides of the comparison are standardized via `NSString.standardizingPath` — this is needed on macOS where `/private/var/...` and `/var/...` refer to the same directory but differ as strings.
+- If `input` resolves to `repositoryRoot` itself, returns `""`.
 - If `input` resolves under `repositoryRoot`, returns the repo-relative substring.
 - Otherwise throws `FileDiscoveryError.pathOutsideRepository(path:, repositoryRoot:)`.
 
@@ -181,7 +193,7 @@ private static func buildSourceIO(
 ```
 
 - `sourceRef == nil` → `(FilesystemSourceFileLister, WorkingTreeSourceReader, nil)`
-- otherwise → `GitRefResolver.resolve(ref:in:)`, then `(GitRefSourceFileLister, GitRefSourceReader, resolvedSha)`
+- otherwise → `GitRefResolver().resolve(ref:in:)` with the current working directory, then `(GitRefSourceFileLister, GitRefSourceReader, resolvedSha)`. Both receive the user-provided `sourceRef` as `ref` (used in messages and errors) and the resolved sha for git commands.
 
 The `resolvedSha` returned alongside the IO pair is threaded into `AnalysisPipeline.SourceOptions.resolvedSha`, which the pipeline uses when constructing `CacheKey` for each file. See [Pipeline](04-pipeline.md) and [Cache & Baseline](10-cache-baseline.md).
 

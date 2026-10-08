@@ -69,6 +69,20 @@ AI-generated changes are reviewed under the same criteria as human-written code.
 
 ---
 
+## Development Setup
+
+Build and test instructions are in [Building from Source](Docs/BUILDING.md).
+
+The repository uses [pre-commit](https://pre-commit.com) to run SwiftLint, swift-format, codespell, and other checks before each commit:
+
+```bash
+pre-commit install
+```
+
+This installs both the `pre-commit` and `commit-msg` hooks. Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org) and be a single line — the `commit-msg` hook rejects message bodies and `Co-Authored-By` trailers.
+
+---
+
 ## Workflow
 
 1. Open an issue describing the problem or proposal
@@ -97,6 +111,7 @@ Unapproved structural changes may be closed without review.
 | `TempFileHelper` / `TempDirectoryHelper` | Filesystem-dependent tests |
 | `AnalysisHelper` | Integration-level assertions |
 | `ProcessRunner` | End-to-end CLI tests |
+| `GitRepositoryFixture` | Tests that read from a git ref (`--source-ref`) |
 
 ---
 

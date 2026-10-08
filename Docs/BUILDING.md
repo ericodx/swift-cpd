@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - macOS 15 or later
-- Xcode 16 or later
+- Xcode 26 or later
 - Swift 6.2 or later
 
 ## Clone and Build
@@ -33,6 +33,19 @@ With code coverage:
 ```bash
 swift test --enable-code-coverage
 ```
+
+## Make Targets
+
+The `Makefile` mirrors the CI jobs in `.github/workflows/main-analysis.yml`:
+
+| Target | Description |
+|---|---|
+| `make test` | Run unit tests (`swift test`) |
+| `make coverage` | Run tests with coverage and write `coverage/lcov.info` and `coverage/code-coverage-report.xml` |
+| `make sonar` | Build coverage, then upload to SonarCloud (requires `SONAR_TOKEN` and `sonar-scanner`) |
+| `make clean` | Remove `.build` and coverage artifacts |
+
+Run `make help` to list the targets.
 
 ## Install Locally
 

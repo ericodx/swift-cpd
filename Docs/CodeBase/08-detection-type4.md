@@ -24,6 +24,8 @@ var supportedCloneTypes: Set<CloneType> { [.type4] }
 func detect(files: [FileTokens]) -> [CloneGroup]
 ```
 
+`semanticSimilarityThreshold` is a percentage (`0–100`) and is divided by `100` before being compared against the combined score.
+
 ### Pipeline
 
 ```mermaid
@@ -55,7 +57,9 @@ Pairs are filtered before scoring using the ratio of control flow shape lengths:
 ratio = min(|shapeA|, |shapeB|) / max(|shapeA|, |shapeB|)
 ```
 
-Pairs with `ratio < 0.3` are discarded. Pairs where both shapes are empty always pass (no control flow means structurally similar).
+Pairs with `ratio < 0.3` are discarded. Pairs where both shapes are empty always pass (no control flow means structurally similar). Every unordered pair of signed blocks is tested.
+
+`buildSignedBlocks` creates a fresh `BehaviorSignatureExtractor` and `SemanticNormalizer` for each block, passing the file's full `source` together with the block's `startLine`/`endLine`. Each visitor parses the whole file and only records nodes inside the line range (see `RangedSyntaxVisitor` in [Detection — Core](05-detection-core.md)).
 
 ### Type4CandidatePair
 
@@ -86,7 +90,7 @@ A compact, language-agnostic fingerprint of what a code block *does*.
 
 ```swift
 let controlFlowShape:  [ControlFlowNode]   // ordered sequence of control flow statements
-let dataFlowPatterns:  [DataFlowPattern]   // how variables are defined and used
+let dataFlowPatterns:  [DataFlowPattern]   // one entry per variable name, sorted by rawValue
 let calledFunctions:   Set<String>         // names of all called functions
 let typeSignatures:    Set<String>         // type names referenced
 ```
@@ -119,10 +123,12 @@ enum DataFlowPattern: String, Sendable, Equatable, Hashable
 
 | Case | Meaning |
 |---|---|
-| `.defineAndUse` | Variable is both bound and referenced in the block |
-| `.defineOnly` | Variable is bound but never referenced |
-| `.useOnly` | Variable is referenced but bound outside the block |
-| `.parameterUse` | A function parameter is referenced |
+| `.defineAndUse` | Name is bound in the block (`PatternBindingSyntax`) and also referenced |
+| `.defineOnly` | Name is bound in the block but never referenced |
+| `.useOnly` | Name is referenced but not bound in the block and is not a parameter name |
+| `.parameterUse` | Name is referenced, not bound in the block, and matches a parameter declared in range |
+
+Names are tracked as sets, so each distinct name contributes exactly one pattern regardless of how many times it appears.
 
 ---
 
@@ -138,7 +144,7 @@ A swift-syntax `SyntaxVisitor` that walks a source range and accumulates the fie
 func extract() -> BehaviorSignature
 ```
 
-Runs the walk (via `run()`) and returns the accumulated signature. Uses `private var` for all accumulation state to ensure Swift 6 concurrency safety.
+Runs the walk (via `run()`) and returns the accumulated signature. Accumulation state is held in `private var`s and is **not** reset between calls, so each instance is meant to be used for a single `extract()`.
 
 Visited nodes and their effect:
 
@@ -155,12 +161,14 @@ Visited nodes and their effect:
 | `ThrowStmtSyntax` | append `.throwStatement` |
 | `BreakStmtSyntax` | append `.breakStatement` |
 | `ContinueStmtSyntax` | append `.continueStatement` |
-| `FunctionCallExprSyntax` | add extracted name to `calledFunctions` |
-| `PatternBindingSyntax` | determine and append `DataFlowPattern` |
-| `DeclReferenceExprSyntax` | track variable use |
-| `FunctionParameterSyntax` | append `.parameterUse` |
-| `ReturnClauseSyntax` | add return type to `typeSignatures` |
+| `FunctionCallExprSyntax` | add `FunctionNameExtractor` name to `calledFunctions` |
+| `PatternBindingSyntax` | record `pattern.trimmedDescription` as a defined variable |
+| `DeclReferenceExprSyntax` | record `baseName` as a used variable |
+| `FunctionParameterSyntax` | record the parameter name (`secondName ?? firstName`); add its type to `typeSignatures` when it is an `IdentifierTypeSyntax` |
+| `ReturnClauseSyntax` | add the return type to `typeSignatures` when it is an `IdentifierTypeSyntax` |
 | `IdentifierTypeSyntax` | add type name to `typeSignatures` |
+
+Each node is only recorded when `isInRange` holds; children are always visited. `DataFlowPattern`s are derived after the walk from the defined, used and parameter name sets (see the table above).
 
 ### BehaviorSignatureComparer
 
@@ -169,14 +177,14 @@ struct BehaviorSignatureComparer: Sendable
 func similarity(between signatureA: BehaviorSignature, and signatureB: BehaviorSignature) -> Double
 ```
 
-Combines four sub-scores into an overall similarity:
+Combines four sub-scores into a weighted overall similarity:
 
-| Component | Algorithm |
-|---|---|
-| Control flow shape | `LCSCalculator.similarity` over `[ControlFlowNode]` |
-| Data flow patterns | `LCSCalculator.similarity` over `[DataFlowPattern]` |
-| Called functions | Jaccard of sets |
-| Type signatures | Jaccard of sets |
+| Component | Algorithm | Weight |
+|---|---|---|
+| Control flow shape | `LCSCalculator.similarity` over `[ControlFlowNode]` | 0.4 |
+| Data flow patterns | `BagJaccardSimilarity.calculate` over `[DataFlowPattern]` | 0.3 |
+| Called functions | Jaccard of sets (`1.0` when both are empty) | 0.2 |
+| Type signatures | Jaccard of sets (`1.0` when both are empty) | 0.1 |
 
 ### FunctionNameExtractor
 
@@ -185,7 +193,13 @@ enum FunctionNameExtractor
 static func extract(from expression: ExprSyntax) -> String
 ```
 
-Extracts a printable function name from a call expression. Handles member access (`receiver.method`), identifiers, and falls back to `"closure"` for anonymous closures.
+Extracts a printable function name from a call's `calledExpression`:
+
+- `MemberAccessExprSyntax` → the member name only (`items.map` → `"map"`).
+- `DeclReferenceExprSyntax` → the identifier (`print` → `"print"`).
+- Anything else → `expression.trimmedDescription`.
+
+Used by both `BehaviorSignatureExtractor` and `SemanticNormalizer`.
 
 ---
 
@@ -226,17 +240,17 @@ enum SemanticNodeKind: String, Sendable, Equatable, Hashable, CaseIterable
 
 | Case | Represents |
 |---|---|
-| `.assignment` | Variable binding (`let x = …`) |
-| `.functionCall` | Call expression |
-| `.returnValue` | `return` with a value |
-| `.conditional` | `if`, `guard`, `switch` |
-| `.loop` | `for`, `while`, `repeat`, `forEach` |
-| `.guardExit` | `guard-else-return/throw` |
-| `.errorHandling` | `do-catch`, `throw` |
-| `.collectionOperation` | `map`, `filter`, `reduce`, `sorted`, … |
-| `.optionalUnwrap` | `if let`, `guard let` |
+| `.assignment` | Pattern binding (`let x = …`) |
+| `.functionCall` | Call expression that is neither `forEach` nor a collection operation |
+| `.returnValue` | Any `return` statement |
+| `.conditional` | `guard`, `switch`, or an `if` without an optional binding |
+| `.loop` | `for`, `while`, `repeat`, or a call named `forEach` |
+| `.guardExit` | `guard` whose body contains `return`/`throw`, or a negated `if` (`!…`) whose body contains `return`/`throw` |
+| `.errorHandling` | `do`, `throw` |
+| `.collectionOperation` | Call named `map`, `flatMap`, `compactMap`, `filter`, `reduce`, `sorted`, `sort`, `contains`, `first`, `last`, `prefix`, `suffix`, `dropFirst`, `dropLast` |
+| `.optionalUnwrap` | `if let` (replaces `.conditional`) or `guard let` (added after `.conditional`) |
 | `.parameterInput` | Function parameter |
-| `.literalValue` | Constant literal outside a binding |
+| `.literalValue` | Integer, string, float or boolean literal outside a pattern binding, or the literal initializer of a binding |
 
 ### SemanticEdgeKind
 
@@ -262,7 +276,13 @@ A swift-syntax `SyntaxVisitor` that builds an `AbstractSemanticGraph` by visitin
 
 `normalize()` resets all internal state before each `run()` call, making the instance reusable.
 
-Nodes are connected by `.controlFlow` edges in visit order. `.dataFlow` edges connect a `.literalValue` node to the `.assignment` node it initializes.
+Edges are added in two stages:
+
+1. **During the walk**
+   - `.controlFlow` from a `guard`'s `.conditional` node to its `.guardExit` / `.optionalUnwrap` node, and from a negated `if`'s `.conditional` node to its `.guardExit` node.
+   - `.dataFlow` from a literal initializer's `.literalValue` node to the `.assignment` node it initializes.
+   - `.dataFlow` from a variable's `.assignment` node to the most recently added node whenever a `DeclReferenceExprSyntax` refers to that variable (skipped when both are the same node).
+2. **In `buildGraph()`** — when there is more than one node, a `.controlFlow` edge links each node to the next one in visit order, unless an identical edge already exists. These sequential edges are appended after the walk edges.
 
 ---
 
@@ -275,10 +295,14 @@ func similarity(between graphA: AbstractSemanticGraph, and graphB: AbstractSeman
 
 Compares two `AbstractSemanticGraph` values using:
 
-1. **Node kind distribution** — Bag Jaccard over the multiset of `SemanticNodeKind` values.
-2. **Edge kind distribution** — Bag Jaccard over the multiset of `SemanticEdgeKind` values.
+1. **Node kind distribution** — `BagJaccardSimilarity` over the multiset of `SemanticNodeKind` values (weight `0.6`).
+2. **Edge kind sequence** — `LCSCalculator.similarity` over the ordered `SemanticEdgeKind` values of each graph's edges (weight `0.4`).
 
-The two scores are averaged. Returns `1.0` when both graphs are empty.
+```
+similarity = 0.6 × nodeSimilarity + 0.4 × edgeSimilarity
+```
+
+Returns `1.0` when both graphs have no nodes, and `0.0` when exactly one of them has no nodes.
 
 ---
 
@@ -295,9 +319,9 @@ static func length<T: Equatable>(_ sequenceA: [T], _ sequenceB: [T]) -> Int
 static func similarity<T: Equatable>(_ sequenceA: [T], _ sequenceB: [T]) -> Double
 ```
 
-`similarity` returns `2 × lcs / (|A| + |B|)`. Returns `1.0` for two empty sequences.
+`length` uses a two-row DP table and returns `0` when either sequence is empty. `similarity` returns `2 × lcs / (|A| + |B|)`, and `1.0` for two empty sequences.
 
-Used by `BehaviorSignatureComparer` to compare `[ControlFlowNode]` and `[DataFlowPattern]` sequences in order, rewarding blocks that have the same control flow in the same order.
+Used by `BehaviorSignatureComparer` to compare `[ControlFlowNode]` sequences and by `ASGComparer` to compare edge kind sequences, rewarding blocks that have the same structure in the same order.
 
 ---
 
