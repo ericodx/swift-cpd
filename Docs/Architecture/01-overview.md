@@ -47,16 +47,17 @@ graph TD
 
 ```mermaid
 flowchart TD
-    A[Parse CLI arguments] --> B[Load YAML config]
-    B --> C[Merge into Configuration]
-    C --> D{Command?}
+    A[Parse CLI arguments] --> D{Command?}
+    D -- version / help --> V[Print and exit]
     D -- init --> E[Generate .swift-cpd.yml]
-    D -- analyze --> SIO{sourceRef set?}
+    D -- analyze --> B[Load YAML config]
+    B --> C[Merge into Configuration]
+    C --> SIO{sourceRef set?}
     SIO -- no --> F1[FilesystemSourceFileLister<br/>+ WorkingTreeSourceReader]
     SIO -- yes --> F2[GitRefResolver +<br/>GitRefSourceFileLister<br/>+ GitRefSourceReader]
     F1 --> G[Run AnalysisPipeline]
     F2 --> G
-    G --> H[Filter results]
+    G --> H[Filter results<br/>ignoreSameFile · ignoreStructural]
     H --> I{Baseline mode?}
     I -- generate / update --> J[Save baseline]
     I -- compare --> K[Filter new clones]
@@ -64,9 +65,11 @@ flowchart TD
     K --> L
 ```
 
+`init`, `--version` and `--help` are handled before any configuration file is read. The YAML file is `--config <path>` when given, otherwise `.swift-cpd.yml` in the current directory if it exists.
+
 ## Plugin Integration
 
-`SwiftCPDPlugin` implements both `BuildToolPlugin` (SPM) and `XcodeBuildToolPlugin` (Xcode). When integrated into a project, it runs `swift-cpd` automatically during the build using the `xcode` output format, surfacing clones as Xcode build warnings.
+`SwiftCPDPlugin` implements both `BuildToolPlugin` (SPM) and `XcodeBuildToolPlugin` (Xcode). When integrated into a project, it runs `swift-cpd` automatically during the build using the `xcode` output format, surfacing clones as Xcode build warnings. The plugin passes a cache directory and a marker output file inside its plugin work directory (`--cache-dir`, `--output`); in `xcode` mode (without a baseline mode) the CLI prints the warnings to stdout, writes the empty marker file, and exits `0`.
 
 ---
 
