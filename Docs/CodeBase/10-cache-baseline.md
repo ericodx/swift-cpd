@@ -20,7 +20,7 @@ An `actor` that owns the in-memory entry map and serializes all reads and writes
 init(encoder: @escaping @Sendable (Envelope) throws -> Data = { try JSONEncoder().encode($0) })
 ```
 
-The `encoder` parameter is injectable for testing.
+The `encoder` parameter is injectable for testing. The current schema version is exposed as `static let currentSchemaVersion = 2`.
 
 ```swift
 func lookup(key: CacheKey, contentHash: String) -> CacheEntry?
@@ -35,17 +35,19 @@ Writes a new entry into the in-memory map (no disk write here).
 ```swift
 func load(from directory: String) async
 ```
-Reads `<directory>/cache.json` from disk (on a detached task), decodes the envelope, and adopts its `entries` map into the actor's state — but only if `schemaVersion` matches the current schema. A mismatched version or decoding failure leaves the actor empty (cache is silently invalidated).
+Reads `<directory>/cache.json` from disk (on a detached task), decodes the envelope, and adopts its `entries` map into the actor's state — but only if `schemaVersion` matches `currentSchemaVersion`. A missing file, read error, decoding failure or mismatched version leaves the in-memory map unchanged (empty on a fresh actor), so the cache is silently invalidated.
 
 ```swift
 func save(to directory: String) async
 ```
-Wraps the current entries in an `Envelope` with the current schema version, encodes it, then writes the JSON to disk on a detached task. Creates the directory if needed.
+Wraps the current entries in an `Envelope` with the current schema version and encodes it with the injected `encoder`, then writes `<directory>/cache.json` on a detached task. Creates the directory if needed. Encoding and write errors are swallowed — if encoding fails, nothing is written.
 
 ### CacheKey
 
 ```swift
 struct CacheKey: Hashable, Sendable
+init(file: String, resolvedSha: String? = nil)
+
 let file:        String
 let resolvedSha: String?
 
@@ -55,6 +57,8 @@ var encoded: String          // "<resolvedSha>|<file>" or "<file>" when resolved
 The on-disk dictionary key. When `resolvedSha` is `nil`, the working-tree namespace is used (just the path). When a git ref is in play, the resolved SHA prefixes the path so multiple refs of the same file can coexist in the cache without collision.
 
 ### Envelope (schema v2)
+
+Nested type `FileCache.Envelope`, declared in `FileCache+Envelope.swift`.
 
 ```swift
 struct Envelope: Codable, Sendable
@@ -71,8 +75,8 @@ When `load` reads a file with a different `schemaVersion` — or with the legacy
 ```swift
 struct CacheEntry: Sendable, Codable
 let contentHash:      String       // SHA-256 hex string
-let tokens:           [Token]      // original tokenization result
-let normalizedTokens: [Token]      // after TokenNormalizer
+let tokens:           [Token]      // tokenizer output after cross-language mapping and suppression filtering
+let normalizedTokens: [Token]      // tokens after TokenNormalizer
 ```
 
 `Codable` conformance persists the full token list including `location`, enabling exact reconstruction without re-parsing.
@@ -101,12 +105,12 @@ struct BaselineStore: Sendable
 ```swift
 func load(from filePath: String) throws -> Set<BaselineEntry>
 ```
-Reads and JSON-decodes the baseline file. Throws if the file is unreadable or malformed.
+Reads and JSON-decodes the baseline file (a JSON array of `BaselineEntry`). Returns an empty set when the file does not exist; throws if it exists but is unreadable or malformed.
 
 ```swift
 func save(_ entries: Set<BaselineEntry>, to filePath: String) throws
 ```
-JSON-encodes and writes `entries` to `filePath`.
+Sorts `entries` (type ascending → token count descending → first fingerprint file), encodes them as a pretty-printed JSON array with sorted keys, and writes the result to `filePath`.
 
 ```swift
 func entriesFromCloneGroups(_ groups: [CloneGroup]) -> Set<BaselineEntry>
@@ -116,7 +120,7 @@ Converts each `CloneGroup` to a `BaselineEntry` by computing a `FragmentFingerpr
 ```swift
 func filterNewClones(_ groups: [CloneGroup], baseline: Set<BaselineEntry>) -> [CloneGroup]
 ```
-Returns only the groups in `groups` that have **no matching** `BaselineEntry` in `baseline`. A group matches a baseline entry when its type, approximate token count, line count, and fragment fingerprints all correspond.
+Returns only the groups in `groups` that have **no matching** `BaselineEntry` in `baseline`. Matching is exact `BaselineEntry` equality: type, token count, line count, and the ordered list of fragment fingerprints must all be identical.
 
 ### BaselineEntry
 
@@ -137,16 +141,18 @@ let startLine: Int
 let endLine:   Int
 ```
 
-The fingerprint deliberately omits column numbers. This makes the baseline tolerant of code reformatting or minor edits above a clone that shift its line numbers slightly without changing its content.
+The fingerprint deliberately omits column numbers, so changes that only move a clone horizontally (e.g. re-indentation) keep it matched. Line numbers are part of the fingerprint, though: any edit that shifts a clone's start or end line makes it a new entry and it is reported again in compare mode.
 
 ### Baseline modes
 
 | Mode | `BaselineMode` case | Behaviour |
 |---|---|---|
-| Generate | `.generate` | Run analysis; save all clones to baseline file; exit 0 |
-| Update | `.update` | Same as generate — overwrites the existing baseline |
-| Compare | `.compare` | Run analysis; load baseline; report only clones not in baseline |
+| Generate | `.generate` | Run analysis; save all clones to baseline file; print `Baseline generated with N clone(s) at <path>`; exit 0 (no report is produced) |
+| Update | `.update` | Same as generate — overwrites the existing baseline and prints `Baseline updated …` |
+| Compare | `.compare` | Run analysis; load baseline (missing file = empty baseline); report only clones not in baseline |
 | Off | `.none` | Run analysis; report all clones |
+
+Baselines are built from the clone groups that remain after `ignoreSameFile` / `ignoreStructural` filtering.
 
 ---
 
