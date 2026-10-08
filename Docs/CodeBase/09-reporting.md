@@ -39,7 +39,7 @@ var resolvedSha:        String?     // sha resolved from sourceRef (or ":0" for 
 var sortedCloneGroups: [CloneGroup]
 ```
 
-`sortedCloneGroups` sorts by: clone type ascending → token count descending → first fragment file → first fragment start line. This order is deterministic and is the order used in all reports.
+`sortedCloneGroups` sorts by: clone type (`rawValue`) ascending → token count descending → first fragment file → first fragment start line. This order is deterministic, and every reporter iterates `sortedCloneGroups` rather than `cloneGroups`.
 
 When `sourceRef` is set, reporters surface the ref in their output (see each implementation below). When `nil`, output stays byte-identical to pre-source-ref runs — reporters omit the new fields entirely.
 
@@ -52,7 +52,7 @@ enum DuplicationCalculator
 static func percentage(duplicatedTokens: Int, totalTokens: Int) -> Double
 ```
 
-Returns `duplicatedTokens / totalTokens × 100`. Returns `0.0` when `totalTokens` is zero. Used to compute the duplication percentage shown in reports and checked against `maxDuplication`.
+Returns `duplicatedTokens / totalTokens × 100`, rounded to one decimal place. Returns `0.0` when `totalTokens` is zero. Used for `summary.duplicationPercentage` in the JSON report and, in `SwiftCPD`, checked against `maxDuplication` (exit code `clonesDetected` when the percentage is strictly greater).
 
 ---
 
@@ -62,9 +62,7 @@ Returns `duplicatedTokens / totalTokens × 100`. Returns `0.0` when `totalTokens
 
 Human-readable console output. Designed for interactive use.
 
-- Groups clones by type.
-- For each clone: prints fragment locations and a source preview.
-- Header: total clones, files analyzed, execution time. When `sourceRef` is set, the header includes `at <ref>`:
+- Header: total clones, files analyzed, execution time (`%.2f` seconds). When `sourceRef` is set, the header includes `at <ref>`:
 
   ```
   Found 4 clone(s) in 96 files (at HEAD, 0.42s)
@@ -72,6 +70,14 @@ Human-readable console output. Designed for interactive use.
   ```
 
   Without `sourceRef` the format is unchanged: `Found 4 clone(s) in 96 files (0.42s)`.
+- When no clones remain and `filteredCloneCount > 0`, the "No clones detected" line gets the suffix ` (N clone(s) filtered by configuration)`.
+- Each clone (in `sortedCloneGroups` order, numbered from 1) is preceded by a blank line and printed as a header followed by one indented `file:startLine-endLine` line per fragment. No source preview is printed:
+
+  ```
+  Clone 1 (Type-2, 120 tokens, 15 lines):
+    Sources/A.swift:10-24
+    Sources/B.swift:40-54
+  ```
 
 ### JsonReporter
 
@@ -90,15 +96,23 @@ JsonReport                      (keys encoded in sorted order)
 │   ├── filesAnalyzed
 │   ├── timestamp     — ISO 8601
 │   └── totalTokens
+├── resolvedSha       — present only when --source-ref is set
+├── sourceRef         — present only when --source-ref is set
 ├── summary           — JsonSummary
-│   ├── byType        — JsonByType (clone counts per type)
+│   ├── byType        — JsonByType (type1 · type2 · type3 · type4 clone counts)
 │   ├── duplicatedLines · duplicatedTokens
 │   ├── duplicationPercentage
 │   └── totalClones
-├── version           — tool version string (Version.current)
-├── sourceRef         — present only when --source-ref is set
-└── resolvedSha       — present only when --source-ref is set
+└── version           — tool version string (Version.current)
 ```
+
+Field details:
+
+- `id` is `clone-001`, `clone-002`, … in `sortedCloneGroups` order; `type` is `CloneType.rawValue`.
+- `executionTimeMs` is `Int(executionTime × 1000)`.
+- `preview` is the fragment's first line with surrounding spaces/tabs trimmed; it is `""` when the file could not be read.
+- `duplicatedTokens` / `duplicatedLines` are the sums of `tokenCount` / `lineCount` over all reported clones; `duplicationPercentage` comes from `DuplicationCalculator`.
+- The encoder uses `.prettyPrinted` and `.sortedKeys`. If encoding fails, the reporter returns `{}`.
 
 `sourceRef` and `resolvedSha` are encoded via `encodeIfPresent` — when absent, they are omitted from the output entirely. Existing consumers that don't know about them are unaffected.
 
@@ -110,17 +124,22 @@ The `CodingKeys` enum lives in its own file (`JsonReport+CodingKeys.swift`) as a
 
 Produces a self-contained HTML page with embedded CSS. Suitable for sharing or archiving analysis results.
 
-The summary paragraph at the top of the page follows the same `at <ref>` pattern as `TextReporter`. The ref value is passed through `escapeHtml` before being rendered.
+- The summary paragraph reads `N clone(s) found in M files (0.42s)` and follows the same `at <ref>` pattern as `TextReporter` when `sourceRef` is set.
+- Each clone is a card with `Clone N`, a `Type-N` badge (CSS class `type-N`), `T tokens, L lines`, and a list of `file:startLine-endLine` fragments. No source preview is rendered.
+- When no clones remain, a `No clones detected.` block is shown, with `(N clone(s) filtered by configuration)` appended when `filteredCloneCount > 0`.
+- `escapeHtml` replaces only `&`, `<` and `>` (quotes are not escaped). It is applied to the ref value and to each fragment's file path.
 
 ### XcodeReporter
 
 Produces one line per fragment in the format:
 
 ```
-/path/to/File.swift:10:1: warning: Clone detected (Type 2, 120 tokens, 15 lines, 100.0% similarity)
+/path/to/File.swift:10:1: warning: Clone detected (Type-2, 120 tokens, 15 lines) — also in OtherFile.swift:42
 ```
 
-This format is recognized natively by Xcode and the build plugin, surfacing clones as build warnings inline in the editor.
+The location is `file:startLine:startColumn`. The `also in` list names every *other* fragment of the same clone as `<last path component>:<startLine>`, joined with `, `. Similarity is not included. When there are no clones the output is an empty string.
+
+This format is recognized natively by Xcode and the build plugin, surfacing clones as build warnings inline in the editor. In `SwiftCPD.handleReport`, the `xcode` format is always printed to stdout — when an output path is set, only an empty marker file is written there — and the run exits with `success`.
 
 > **Caveat: `--format xcode` with `--source-ref`.** The Xcode format is designed for the SPM/Xcode build plugin, which runs against the working tree. When combined with `--source-ref`, warnings carry `file:line` from the blob — but Xcode opens the corresponding working-tree file when the user clicks them. If the working tree and the ref diverge, the line shown may not contain the flagged code. Prefer `text` or `json` when analyzing a specific ref.
 
