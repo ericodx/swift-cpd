@@ -47,16 +47,15 @@ swift-cpd
 ### First-time output (text format)
 
 ```
-Clone detected — Type 2 | 18 lines | 142 tokens | 100.0% similarity
-  Sources/MyApp/Networking/UserService.swift  :  45 –  62
-  Sources/MyApp/Networking/ProductService.swift :  91 – 108
+Found 2 clone(s) in 47 files (1.30s)
 
-Clone detected — Type 3 | 24 lines | 198 tokens | 73.4% similarity
-  Sources/MyApp/ViewModels/ListViewModel.swift  :  12 –  35
-  Sources/MyApp/ViewModels/DetailViewModel.swift :  18 –  41
+Clone 1 (Type-2, 142 tokens, 18 lines):
+  Sources/MyApp/Networking/UserService.swift:45-62
+  Sources/MyApp/Networking/ProductService.swift:91-108
 
-──────────────────────────────────────────────────
-2 clone(s) found in 47 file(s) — 4.2% duplication — 1.3s
+Clone 2 (Type-3, 198 tokens, 24 lines):
+  Sources/MyApp/ViewModels/ListViewModel.swift:12-35
+  Sources/MyApp/ViewModels/DetailViewModel.swift:18-41
 ```
 
 ---
@@ -350,10 +349,14 @@ swift-cpd --format text Sources/
 ```
 
 ```
-Clone detected — Type 1 | 10 lines | 82 tokens | 100.0% similarity
-  Sources/App/Cache/DiskCache.swift      :  14 –  23
-  Sources/App/Cache/MemoryCache.swift    :  31 –  40
+Found 1 clone(s) in 47 files (1.24s)
+
+Clone 1 (Type-1, 82 tokens, 10 lines):
+  Sources/App/Cache/DiskCache.swift:14-23
+  Sources/App/Cache/MemoryCache.swift:31-40
 ```
+
+When nothing is found, the output is a single line: `No clones detected in 47 files (1.24s)`.
 
 ### json
 
@@ -365,42 +368,55 @@ swift-cpd --format json --output report.json Sources/
 
 ```json
 {
-  "metadata": {
-    "version": "swift-cpd 1.0.0 [arm64-macos15]",
-    "timestamp": "2026-03-13T14:00:00Z",
-    "executionTime": 1.24
-  },
-  "summary": {
-    "totalClones": 2,
-    "filesAnalyzed": 47,
-    "totalTokens": 18430,
-    "duplicationPercentage": 4.2
-  },
-  "byType": { "type1": 1, "type2": 1, "type3": 0, "type4": 0 },
   "clones": [
     {
-      "type": 1,
-      "similarity": 100.0,
-      "tokenCount": 82,
-      "lineCount": 10,
       "fragments": [
         {
+          "endColumn": 6,
+          "endLine": 23,
           "file": "Sources/App/Cache/DiskCache.swift",
-          "startLine": 14, "endLine": 23,
-          "startColumn": 5, "endColumn": 1,
-          "preview": "    func store(_ value: ...\n    ..."
+          "preview": "func store(_ value: Data, for key: String) { ... }",
+          "startColumn": 5,
+          "startLine": 14
         },
         {
+          "endColumn": 6,
+          "endLine": 40,
           "file": "Sources/App/Cache/MemoryCache.swift",
-          "startLine": 31, "endLine": 40,
-          "startColumn": 5, "endColumn": 1,
-          "preview": "    func store(_ value: ...\n    ..."
+          "preview": "func store(_ value: Data, for key: String) { ... }",
+          "startColumn": 5,
+          "startLine": 31
         }
-      ]
+      ],
+      "id": "clone-001",
+      "lineCount": 10,
+      "similarity": 100,
+      "tokenCount": 82,
+      "type": 1
     }
-  ]
+  ],
+  "metadata": {
+    "configuration": {
+      "minimumLineCount": 5,
+      "minimumTokenCount": 50
+    },
+    "executionTimeMs": 1240,
+    "filesAnalyzed": 47,
+    "timestamp": "2026-03-13T14:00:00Z",
+    "totalTokens": 18430
+  },
+  "summary": {
+    "byType": { "type1": 1, "type2": 0, "type3": 0, "type4": 0 },
+    "duplicatedLines": 10,
+    "duplicatedTokens": 82,
+    "duplicationPercentage": 0.4,
+    "totalClones": 1
+  },
+  "version": "swift-cpd 1.5.0 [arm64-macos15]"
 }
 ```
+
+Keys are sorted alphabetically. `version` is the same string `swift-cpd --version` prints. `preview` is the first line of the fragment, followed by ` ... }` when the fragment spans more than one line. `sourceRef` and `resolvedSha` are added only when `--source-ref` is set (see [Reading from a git ref](#reading-from-a-git-ref---source-ref)).
 
 ### html
 
@@ -420,8 +436,8 @@ swift-cpd --format xcode Sources/
 ```
 
 ```
-/path/to/DiskCache.swift:14:5: warning: Clone detected (Type 1, 82 tokens, 10 lines, 100.0% similarity)
-/path/to/MemoryCache.swift:31:5: warning: Clone detected (Type 1, 82 tokens, 10 lines, 100.0% similarity)
+/path/to/DiskCache.swift:14:5: warning: Clone detected (Type-1, 82 tokens, 10 lines) — also in MemoryCache.swift:31
+/path/to/MemoryCache.swift:31:5: warning: Clone detected (Type-1, 82 tokens, 10 lines) — also in DiskCache.swift:14
 ```
 
 ---
