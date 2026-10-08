@@ -26,9 +26,12 @@ Code duplication leads to:
 
 ## Features
 
-- Structural duplication detection (AST-based)
-- Works with Swift, Objective-C, and C codebases
-- Enforces duplication rules in CI pipelines
+- Structural duplication detection (AST-based) across four clone types: Type-1 (exact), Type-2 (parameterized), Type-3 (near-miss), and Type-4 (semantic)
+- Works with Swift, and with Objective-C and C via `--cross-language`
+- Output as `text`, `json`, `html`, or `xcode` (inline Xcode warnings)
+- Enforces duplication rules in CI pipelines (`--max-duplication` quality gate, baselines for legacy clones)
+- Inline suppression with `// swiftcpd:ignore` comments
+- Tokenization cache for fast repeated runs (`--no-cache` to disable)
 - Supports code quality and governance practices
 
 ---
@@ -55,11 +58,11 @@ swift-cpd
 Example output:
 
 ```
-Clone detected — Type 2 | 15 lines | 120 tokens | 100.0% similarity
-  Sources/App/Services/UserService.swift    :  34 –  48
-  Sources/App/Services/ProductService.swift :  71 –  85
+Found 1 clone(s) in 32 files (0.80s)
 
-1 clone(s) found in 32 file(s) — 2.1% duplication — 0.8s
+Clone 1 (Type-2, 120 tokens, 15 lines):
+  Sources/App/Services/UserService.swift:34-48
+  Sources/App/Services/ProductService.swift:71-85
 ```
 
 ## Configuration
@@ -71,7 +74,11 @@ paths:
   - Sources/
 minimumTokenCount: 50
 minimumLineCount: 5
-enabledCloneTypes: [1, 2, 3, 4]
+enabledCloneTypes:
+  - 1
+  - 2
+  - 3
+  - 4
 ignoreSameFile: true
 exclude:
   - "**/*Tests*"
@@ -101,3 +108,5 @@ See [Reading from a git ref](Docs/USAGE.md#reading-from-a-git-ref---source-ref) 
 | [Xcode Plugin](Docs/xcode-plugin.md) | Step-by-step Xcode and SPM plugin setup |
 | [Architecture](Docs/Architecture/README.md) | System design, pipeline, detection algorithms |
 | [CodeBase Reference](Docs/CodeBase/README.md) | Every type, protocol, and algorithm documented |
+| [Building from Source](Docs/BUILDING.md) | Build, test, and coverage for contributors |
+| [Contributing](CONTRIBUTING.md) | Technical principles, code style, and workflow |
