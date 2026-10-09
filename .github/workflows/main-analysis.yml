@@ -58,33 +58,7 @@ jobs:
           | sed "s|$(pwd)/||g" \
           > coverage/lcov.info
 
-          echo '<coverage version="1">' > coverage/code-coverage-report.xml
-
-          awk '
-            /^SF:/ {
-              file = substr($0,4);
-              if (file ~ /^Sources\/.*\.swift$/) {
-                current_file = file;
-                printf "  <file path=\"%s\">\n", current_file;
-                inside = 1;
-              } else {
-                inside = 0;
-              }
-            }
-
-            inside && /^DA:/ {
-              split($0,a,",");
-              line = substr(a[1],4);
-              covered = (a[2] > 0 ? "true" : "false");
-              printf "    <lineToCover lineNumber=\"%s\" covered=\"%s\"/>\n", line, covered;
-            }
-
-            inside && /^end_of_record/ {
-              print "  </file>";
-            }
-          ' coverage/lcov.info >> coverage/code-coverage-report.xml
-
-          echo '</coverage>' >> coverage/code-coverage-report.xml
+          awk -f .github/scripts/lcov-to-sonar.awk coverage/lcov.info > coverage/code-coverage-report.xml
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v7

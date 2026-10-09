@@ -4,7 +4,7 @@
 # coverage XML format consumed by SonarCloud / SonarQube.
 #
 # Usage:
-#   awk -f Scripts/lcov-to-sonar.awk < input.lcov > output.xml
+#   awk -f .github/scripts/lcov-to-sonar.awk < input.lcov > output.xml
 #
 # The XML envelope (<coverage version="1"> ... </coverage>) is emitted by this
 # script. Only files under Sources/*.swift are included; everything else is
