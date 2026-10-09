@@ -10,7 +10,7 @@ COVERAGE_LCOV := $(COVERAGE_DIR)/lcov.info
 COVERAGE_XML  := $(COVERAGE_DIR)/code-coverage-report.xml
 
 SONAR_HOST_URL ?= https://sonarcloud.io
-SONAR_SCRIPT   := Scripts/lcov-to-sonar.awk
+SONAR_SCRIPT   := .github/scripts/lcov-to-sonar.awk
 
 .PHONY: help test coverage sonar clean
 
