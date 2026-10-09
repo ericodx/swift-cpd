@@ -40,7 +40,7 @@ struct EndToEndAnalysisTests {
         let data = try #require(output.data(using: .utf8))
         let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
 
-        #expect(json["version"] as? String == "1.0.0")
+        #expect(json["version"] as? String == Version.current)
 
         let clones = try #require(json["clones"] as? [[String: Any]])
         #expect(!clones.isEmpty)
