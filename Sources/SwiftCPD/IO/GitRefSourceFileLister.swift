@@ -9,9 +9,7 @@ struct GitRefSourceFileLister: SourceFileLister {
         crossLanguageEnabled: Bool,
         excludePatterns: [String] = [],
         runner: GitProcessRunner = GitProcessRunner(),
-        stderr: @escaping @Sendable (String) -> Void = { message in
-            FileHandle.standardError.write(Data(message.utf8))
-        }
+        stderr: @escaping @Sendable (String) -> Void = fileHandleWriter(.standardError)
     ) {
         self.ref = ref
         self.resolvedSha = resolvedSha
@@ -21,6 +19,12 @@ struct GitRefSourceFileLister: SourceFileLister {
         self.runner = runner
         self.stderr = stderr
         self.globMatcher = GlobMatcher(patterns: excludePatterns)
+    }
+
+    static func fileHandleWriter(_ handle: FileHandle) -> @Sendable (String) -> Void {
+        { message in
+            handle.write(Data(message.utf8))
+        }
     }
 
     private static let swiftExtensions: Set<String> = ["swift"]
