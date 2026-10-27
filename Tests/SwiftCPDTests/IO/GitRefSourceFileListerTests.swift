@@ -216,8 +216,8 @@ struct GitRefSourceFileListerTests {
         }
     }
 
-    @Test("Given submodule entry and default stderr closure, when listing, then warning is written to standard error")
-    func defaultStderrWritesToStandardError() throws {
+    @Test("Given submodule entry and file handle writer, when listing, then warning is written to the file handle")
+    func fileHandleWriterWritesToFileHandle() throws {
         let repo = try GitRepositoryFixture()
         defer { repo.cleanup() }
 
@@ -226,15 +226,17 @@ struct GitRefSourceFileListerTests {
 
         try repo.run("update-index", "--add", "--cacheinfo", "160000,\(headSha),SubProject")
 
-        let captured = StderrCapture.capture {
-            let lister = GitRefSourceFileLister(
-                ref: ":0",
-                resolvedSha: ":0",
-                repositoryRoot: repo.root,
-                crossLanguageEnabled: false
-            )
-            _ = try? lister.listFiles(in: [""])
-        }
+        let pipe = Pipe()
+        let lister = GitRefSourceFileLister(
+            ref: ":0",
+            resolvedSha: ":0",
+            repositoryRoot: repo.root,
+            crossLanguageEnabled: false,
+            stderr: GitRefSourceFileLister.fileHandleWriter(pipe.fileHandleForWriting)
+        )
+        _ = try? lister.listFiles(in: [""])
+        try pipe.fileHandleForWriting.close()
+        let captured = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
 
         #expect(captured.contains("SubProject"))
         #expect(captured.contains("submodule"))
